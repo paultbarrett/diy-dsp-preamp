@@ -50,14 +50,16 @@ expensive; however a
 on ASR about a rpi4 + CamillDSP + Motu M4 4 channel interface piqued my
 curiosity so I decided to go the "DIY" way given that I already had some gear at
 hand (I "only" bought the M4). I ended up spending waaaay more time than
-planned; time-wise it's much more expensive than simply buying the Flex - but it
-was definitely interesting and I learned quite a few things.
+planned; time-wise it was defintely much more expensive than simply buying the
+Flex - but it was definitely interesting and I learned quite a few things.
 
 So - the project below is what I ended up with, I'm happy with the result, it
 works perfectly and trumps the miniDSP Flex in terms of features. Hopefully my
 notes will help someone - as some things initially looked difficult but ended up
 taking only a bit of time, while other things looked easy but took a lot of time
 to implement/debug.
+
+Some pics:
 
 ![zoom](img/setup_1.jpg) ![whole](img/setup_2.jpg)
 
@@ -71,39 +73,59 @@ for quite a bit of time.
 Hardware:
 
 - an old mini-ITX case, with a custom-made wood panel
-- ~1W power consumption with a [Rockpi-S](https://wiki.radxa.com/RockpiS) (but
-  could have been a rpi3/4 or whatever run-of-the-mill embedded platform).
+
+- [Rockpi-S](https://wiki.radxa.com/RockpiS) arm board - 1W power consumption. I
+  was afraid it wouldn't have enough resources but it runs everything -
+  CamillaDSP (40 filters), BT streamer with pcm/ldac conversion and whatnot - in
+  parallel without any issue. Any other run-of-the-mill embedded platform like
+  rpi3/4 should work.
+
 - [Motu M4](https://motu.com/m4) sound interface 4 channels (or USB) in / 4
   channels out; this interface got [pretty good
   measurements/reviews](https://www.audiosciencereview.com/forum/index.php?threads/motu-m4-audio-interface-review.15757/)
-  on ASR. But TBH, I don't think I could hear the difference of DACs with worse
-  measurements, so any decent interface should work.
-- Rotary encoder (on GPIO inputs) with software debouncing for the master volume
+  on ASR. TBH, I don't think I could hear the difference with DACs that have far
+  worse measurements, so any decent interface should work.
+
+- Rotary encoder (on GPIO inputs) for the master volume, with [software
+  debouncing](www.buxtronix.net/2011/10/rotary-encoders-done-properly.html)
   (note: the rockpi-s has an analog-in input that could be used with a
-  potentiometer instead - tested to work OK with the latest armbian release +
-  updates).
-- Buttons (on GPIO inputs) for pause/mute and switching CamillaDSP configs
+  potentiometer instead - tested to work OK with the latest armbian release and
+  the latest updates).
+
+- Buttons (on GPIO inputs) for (un)pausing/muting CamillaDSP and switching
+  configurations.
+
 - small i2c [oled
   display](https://www.winstar.com.tw/products/oled-module/graphic-oled-display/dual-color-oled.html)
   that shows the volume, mute status, player status, RMS/peak dB, and
   CamillaDSP config index.
+
 - a custom breakout board, mostly with resistors to protect gpio inputs and a
   few capacitors for filtering. (one could do without that board)
-- a "master" switch to switch 5V and 220V (via relay+fuse) to the amp/sub/M4
-  (also not needed per se. - just provides convenience of turning off/on
-  everything at once).
+
+- a "master" toggle switch to switch 5V (M4) and 220V (amp/sub via relay+fuse).
+  Also not needed per se. - just provides convenience of turning off/on
+  everything at once
+
 - a [Bluetooth
   dongle](https://www.tp-link.com/us/home-networking/usb-adapter/ub500/) for
   streaming LDAC audio via BT (that's a standalone setup, not related to
   anything above)
 
+- an old USB hub (the rockpi only has one USB port and I needed two - one for
+  the M4, one for the BT dongle)
+
 Software:
 
 - [armbian](https://www.armbian.com/) (but any decent distro should do)
+
 - [CamillaDSP](https://github.com/HEnquist/camilladsp)
+
 - [pipewire/wireplumber](https://pipewire.org/) for the Bluetooth setup
+
 - pipewire/wireplumber/[jacktrip](https://ccrma.stanford.edu/software/jacktrip/)
   for playing audio sent from other devices
+
 - and finally a few custom python programs to manage the GPIOs, CamillaDSP,
   automatically play an inaudible tone to "wake-up" the subwoofer, display
   the volume/levels/... on the i2c display, etc.
@@ -196,9 +218,11 @@ parameters if you're not 100% sure that the 2nd app is always started after the
 CamillaDSP startup "sequence" overview:
 
 - a udev event is triggered when the M4 is powered on
+
 - udev creates a systemd service from the `camilladsp@.service` template, which
   is bound to the device - ie. systemd stops CamillaDSP when the device
   disappears/is unplugged.
+
 - the systemd service execs a shell helper that builds options for CamillaDSP
   which then execs CamillaDSP (as user `io`)
 
@@ -237,9 +261,11 @@ and `/home/io/camilladsp/configs/`
 
 - [squeezelite](squeezelite.md) plays on `pcm.Loopback0_0_c01` (alsa loopback
   0,0 first two channels - as defined in `/etc/asound.conf`)
+
 - [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
   `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
   standby.
+
 - CamillaDSP capturing from alsa loopback 0,1
 
 Obviously something other than squeezelite could be used - it's pretty easy to
@@ -248,9 +274,11 @@ adapt the setup below to any other player.
 Squeezelite startup "sequence" overview:
 
 - a udev event is triggered when the `snd-aloop` module is loaded
+
 - a udev rule creates a systemd service from the `squeezelite@.service`
   template, which is bound to the underlying device (ie. systemd stops
   squeezelite when the device disappears/is unplugged)
+
 - the systemd service execs a shell helper that builds options for squeezelite,
   which then execs squeezelite (as user `io`)
 
@@ -287,9 +315,11 @@ Files - see:
   (alsa loopback 0,0 first two channels - as defined in `/etc/asound.conf`) with
   a 24000 Hz sampling rate (to decrease bandwidth requirements because jacktrip
   doesn't have compression and my wi-fi isn't great).
+
 - [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
   `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
   standby.
+
 - CamillaDSP captures from alsa loopback 1,1
 
 Note #1 - why jacktrip: because that's the only option that worked for me:
