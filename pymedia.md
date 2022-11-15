@@ -11,7 +11,7 @@ in the code for more info):
   other programs (also updating at regular intervals). Shows player status,
   config index (A, B, ...), RMS/peak signal level, main volume, and mute status.
 
-  ![img](display.jpg)
+  ![display](img/display.jpg)
 
 - `gpios.py`: blinks a rear panel led, wait for mute and source buttons events
   (interrupt based with libgpiod - so no polling), and send redis
