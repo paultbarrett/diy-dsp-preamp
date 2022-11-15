@@ -1,5 +1,7 @@
 # "pymedia" python programs
 
+(see `/home/io/pymedia/*.py`)
+
 Those are a collection of programs with redis as IPC. Overview (look at comments
 in the code for more info):
 
@@ -87,9 +89,18 @@ d       /var/log/redis  0700    redis   redis - -
 
 ### LMSQuery (for lms.py)
 
+Resources:
+- [Original project](https://github.com/roberteinhaus/lmsquery).
+- [LMS cli
+  doc](https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md)
+
+I've packaged the files and added a timeout and connection keepalive. Note:
+LMSquery's license is MIT)
+
+Required dependency - as root:
+
 `apt intall python3-requests`
 
-[cli doc](https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md)
 
 ### pycamilladsp (for cdsp.py)
 
@@ -132,3 +143,6 @@ have to come up with a way to wait for redis ; it's not hard - a simple query
 loop and we'd be good. But - again - while all of this is feasible, it was much
 easier to do it with system services.
 
+## License
+
+Everything is GPL2 (see [LICENSE](LICENSE)) with the eceptio

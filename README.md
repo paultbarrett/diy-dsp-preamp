@@ -1,8 +1,10 @@
 # What's here
 
 Basically, instructions on components (hardware + software) used for a DIY
-multichannel DSP with volume, display, with extras such as waking-up a subwoofer
-with an inaudible tone, bluetooth streamer, etc.
+multichannel DSP (based on the excellent
+[CamillaDSP](https://github.com/HEnquist/camilladsp) project), with dynamic
+master volume, display, and extras such as waking-up a subwoofer with an
+inaudible tone, bluetooth streamer, etc.
 
 This project is pretty generic and should work on different hardware than what
 I've used. I'm publishing my notes so that people struggling with specific
@@ -15,7 +17,7 @@ Table of content:
 
 - [Why](#why)
 - [Components / features:](#components-features)
-- [Installation / Setup](#installation-setup)
+- Installation / Setup
   - [Overview](#overview)
   - [Alsa setup](#alsa-setup)
   - [Capture setup - CamillaDSP](#capture-setup---camilladsp)

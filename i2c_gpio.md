@@ -1,6 +1,7 @@
 # I2C/GPIO setup
 
-[headers pinout and pin addressing](https://wiki.radxa.com/RockpiS/hardware/gpio)
+([Rockpi-S headers pinout and pin 
+addressing](https://wiki.radxa.com/RockpiS/hardware/gpio))
 
 ## GPIO - chardev (with libgpiod):
 
