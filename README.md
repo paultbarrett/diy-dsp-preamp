@@ -17,7 +17,7 @@ Table of content:
 
 - [Why](#why)
 - [Components / features:](#components-features)
-- Installation / Setup
+- [Installation / Setup](#installation--setup)
   - [Overview](#overview)
   - [Alsa setup](#alsa-setup)
   - [Capture setup - CamillaDSP](#capture-setup---camilladsp)
