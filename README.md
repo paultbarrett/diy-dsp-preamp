@@ -20,10 +20,10 @@ Table of content:
 - [Installation / Setup](#installation--setup)
   - [Overview](#overview)
   - [Alsa setup](#alsa-setup)
-  - [Capture setup - CamillaDSP](#capture-setup---camilladsp)
+  - [CamillaDSP setup](#camilladsp-setup)
   - [Config 0: LMS/squeezelite](#config-0-lmssqueezelite)
   - [Config 1: pipewire/jacktrip](#config-1-pipewirejacktrip)
-- [Camilla DSP GUI (optional)](#camilla-dsp-gui-optional)
+- [Camilla DSP GUI setup (optional)](#camilla-dsp-gui-setup-optional)
 - [My CamillaDSP setup](#my-camilladsp-setup)
 - [Python scripts that handle the display, buttons, rotary
   encoder,
@@ -217,7 +217,7 @@ parameters if you're not 100% sure that the 2nd app is always started after the
 1st. That's why it's less fragile to hardcode the parameters everywhere.
 
 
-### Capture setup - CamillaDSP
+### CamillaDSP setup
 
 CamillaDSP startup "sequence" overview:
 
@@ -374,7 +374,7 @@ Main tweaks:
 See [those instructions](jacktrip_client.md) to use jacktrip on the client(s).
 
 
-## Camilla DSP GUI (optional)
+## Camilla DSP GUI setup (optional)
 
 [Download](https://github.com/HEnquist/camillagui-backend/releases)
 
