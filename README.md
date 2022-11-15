@@ -70,6 +70,7 @@ for quite a bit of time.
 
 Hardware:
 
+- an old mini-ITX case, with a custom-made wood panel
 - ~1W power consumption with a [Rockpi-S](https://wiki.radxa.com/RockpiS) (but
   could have been a rpi3/4 or whatever run-of-the-mill embedded platform).
 - [Motu M4](https://motu.com/m4) sound interface 4 channels (or USB) in / 4
@@ -78,6 +79,9 @@ Hardware:
   on ASR. But TBH, I don't think I could hear the difference of DACs with worse
   measurements, so any decent interface should work.
 - Rotary encoder (on GPIO inputs) with software debouncing for the master volume
+  (note: the rockpi-s has an analog-in input that could be used with a
+  potentiometer instead - tested to work OK with the latest armbian release +
+  updates).
 - Buttons (on GPIO inputs) for pause/mute and switching CamillaDSP configs
 - small i2c [oled
   display](https://www.winstar.com.tw/products/oled-module/graphic-oled-display/dual-color-oled.html)
@@ -88,16 +92,18 @@ Hardware:
 - a "master" switch to switch 5V and 220V (via relay+fuse) to the amp/sub/M4
   (also not needed per se. - just provides convenience of turning off/on
   everything at once).
-- a [BT dongle](https://www.tp-link.com/us/home-networking/usb-adapter/ub500/)
-  for streaming LDAC audio via BT (that's a standalone setup, not related to
+- a [Bluetooth
+  dongle](https://www.tp-link.com/us/home-networking/usb-adapter/ub500/) for
+  streaming LDAC audio via BT (that's a standalone setup, not related to
   anything above)
 
 Software:
 
 - [armbian](https://www.armbian.com/) (but any decent distro should do)
 - [CamillaDSP](https://github.com/HEnquist/camilladsp)
-- pipewire/wireplumber for the BT setup
-- pipewire/wireplumber/jacktrip for playing audio sent from other devices
+- [pipewire/wireplumber](https://pipewire.org/) for the Bluetooth setup
+- pipewire/wireplumber/[jacktrip](https://ccrma.stanford.edu/software/jacktrip/)
+  for playing audio sent from other devices
 - and finally a few custom python programs to manage the GPIOs, CamillaDSP,
   automatically play an inaudible tone to "wake-up" the subwoofer, display
   the volume/levels/... on the i2c display, etc.
