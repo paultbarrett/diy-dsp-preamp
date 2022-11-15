@@ -37,8 +37,8 @@ my integrated stereo amp doesn't have an LFE output and the subwoofer I bought
 (Kef Kube12b) only has inputs so there's no way to send frequencies above the
 sub's crossover to the mains (yeah I know - it's debatable, some people prefer
 "let" their mains add whatever bass they can produce but I'm of the opinion that
-it shouldn't be done. YMMW). That + wanting to EQ the whole setup (eg. with REW)
-made me look into available DSP solutions.
+it shouldn't be done. YMMW). That + wanting to EQ the whole setup (eg. with
+[REW](https://www.roomeqwizard.com/)) made me look into available DSP solutions.
 
 Research showed that there were either >1000 USD gear (the usual audiophile BS),
 noisy gear (miniDSP 2x4), OK-ish gear (miniDSP 2x4 HD), or somewhere in the
@@ -47,9 +47,9 @@ expensive; however a
 [post](https://www.audiosciencereview.com/forum/index.php?threads/rpi4-camilladsp-tutorial.29656/)
 on ASR about a rpi4 + CamillDSP + Motu M4 4 channel interface piqued my
 curiosity so I decided to go the "DIY" way given that I already had some gear at
-hand (I "only" bought the M4). I ended up spending waaaay more time than planned
-- time-wise it's much more expensive than simply buying the Flex - but it was
-  definitely interesting and I learned quite a few things.
+hand (I "only" bought the M4). I ended up spending waaaay more time than
+planned; time-wise it's much more expensive than simply buying the Flex - but it
+was definitely interesting and I learned quite a few things.
 
 So - the project below is what I ended up with, I'm happy with the result, it
 works perfectly and trumps the miniDSP Flex in terms of features. Hopefully my
@@ -57,7 +57,7 @@ notes will help someone - as some things initially looked difficult but ended up
 taking only a bit of time, while other things looked easy but took a lot of time
 to implement/debug.
 
-![zoom](setup_1.jpg) ![whole](setup_2.jpg)
+![zoom](img/setup_1.jpg) ![whole](img/setup_2.jpg)
 
 Please note that I don't have much time nowadays - I'd be happy to help when
 possible (post an issue) but please don't take it personally if I don't reply
@@ -120,8 +120,8 @@ first 3 channels.
   #1's first 3 channels. That config allows me to send audio from other devices
   without messing with loopback #0.
 
-In both configs: an inaudible low frequency tone plays at regular intervals on
-alsa loopback #0's 3rd channel to keep the subwoofer turned on
+In both configs above: an inaudible low frequency tone plays at regular
+intervals on alsa loopback #0's 3rd channel to keep the subwoofer turned on
 
 - Bluetooth streamer with LDAC audio (standalone setup/config, independent from
   CamillaDSP/M4/...). In my case, I'm streaming to a [Qudelix
@@ -132,7 +132,8 @@ alsa loopback #0's 3rd channel to keep the subwoofer turned on
 
 ### Alsa setup
 
-We use two alsa loop devices (see note #2 in "Config 1: pipewire/jacktrip").
+We use two alsa loop devices (see note #2 in [Config 1:
+pipewire/jacktrip](#config-1-pipewirejacktrip)).
 
 As root:
 
@@ -145,8 +146,8 @@ echo "options snd-aloop index=0,1 enable=1,1 pcm_substreams=1,1 " \
 
 Since we play stereo content on the first two channels of alsa loopback and an
 intermittent LFE tone on the 3rd, we need a bit more work to "present" the
-loopback device to playing apps as individual, standalone PCMs (trying to
-play on the loopback from both apps won't work). Note: CamillaDSP captures the
+loopback device to playing apps as individual, standalone PCMs (as playing to
+the loopback directly from both apps won't work). Note: CamillaDSP captures the
 whole loopback so no need for any custom configuration on the "capture side".
 
 Most examples on the net make use of alsa's `route` plugin - however this is CPU
@@ -163,8 +164,8 @@ channels of the various producers/consumers **must** match. Alsa's
 [`snd-aloop` doc](https://www.alsa-project.org/main/index.php/Matrix:Module-aloop)
 also mentions this property:
 
->> The first application opening one device, will force the second application,
->> trying to open the other device, to use its established parameters
+> The first application opening one device, will force the second application,
+> trying to open the other device, to use its established parameters
 
 That means that the *order* in which applications are started is important so
 you can't rely on - say - one of the applications to adapt to the other one's
@@ -177,8 +178,8 @@ parameters if you're not 100% sure that the 2nd app is always started after the
 CamillaDSP startup "sequence" overview:
 
 - a udev event is triggered when the M4 is powered on
-- udev creates a systemd service from the camilladsp@.service template, which is
-  bound to the device - ie. systemd stops CamillaDSP when the device
+- udev creates a systemd service from the `camilladsp@.service` template, which
+  is bound to the device - ie. systemd stops CamillaDSP when the device
   disappears/is unplugged.
 - the systemd service execs a shell helper that builds options for CamillaDSP
   which then execs CamillaDSP (as user `io`)
@@ -217,7 +218,10 @@ and `/home/io/camilladsp/configs/`
 ### Config 0: LMS/squeezelite
 
 - [squeezelite](squeezelite.md) plays on `pcm.Loopback0_0_c01` (alsa loopback
-  0,0 first two channels)
+  0,0 first two channels - as defined in `/etc/asound.conf`)
+- [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
+  `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
+  standby.
 - CamillaDSP capturing from alsa loopback 0,1
 
 Obviously something other than squeezelite could be used - it's pretty easy to
@@ -226,9 +230,9 @@ adapt the setup below to any other player.
 Squeezelite startup "sequence" overview:
 
 - a udev event is triggered when the `snd-aloop` module is loaded
-- a udev rule creates a systemd service from the squeezelite@.service template,
-  which is bound to the underlying device (ie. systemd stops squeezelite when
-  the device disappears/is unplugged)
+- a udev rule creates a systemd service from the `squeezelite@.service`
+  template, which is bound to the underlying device (ie. systemd stops
+  squeezelite when the device disappears/is unplugged)
 - the systemd service execs a shell helper that builds options for squeezelite,
   which then execs squeezelite (as user `io`)
 
@@ -240,9 +244,11 @@ former project and has proved to be working really well over the years).
 
 Installation:
 
-`/usr/local/bin/squeezelite`: download the (non pulse version):
-[aarch64 version](https://sourceforge.net/projects/lmsclients/files/squeezelite/linux/)
+Download the [aarch64
+version](https://sourceforge.net/projects/lmsclients/files/squeezelite/linux/)
+non-pulse version of squeezelite and copy to `/usr/local/bin/squeezelite`
 
+Install dependencies - as root:
 
 ```
 apt install libasound2 libmad0 libfaad2 libmpg123-0 libvorbisidec1 libopusfile0
@@ -260,9 +266,12 @@ Files - see:
 ### Config 1: pipewire/jacktrip
 
 - `jacktrip` (through pipewire's jack server) plays on `pcm.Loopback1_0_c01`
-  (alsa loopback 0,0 first two channels) with a 24000 Hz sampling rate (to
-  decrease bandwidth requirements because jacktrip doesn't have compression and
-  my wi-fi isn't great).
+  (alsa loopback 0,0 first two channels - as defined in `/etc/asound.conf`) with
+  a 24000 Hz sampling rate (to decrease bandwidth requirements because jacktrip
+  doesn't have compression and my wi-fi isn't great).
+- [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
+  `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
+  standby.
 - CamillaDSP captures from alsa loopback 1,1
 
 Note #1 - why jacktrip: because that's the only option that worked for me:
@@ -345,7 +354,7 @@ templates  with `envsubst` (custom building script - not included here)
 (The configuration files I use are in `/home/io/camilladsp/configs/`.)
 
 
-The pipeline below shows my config:
+Pipeline:
 
 ![pipeline](img/pipeline.svg)
 
@@ -355,22 +364,23 @@ Notes:
   ch1 is stereo content from squeezelite or jacktrip, ch2 is the intermittent
   inaudible LFE tone.
 
-- I could have used a 3x4 and then 4x4 mixer instead of 3x6 and 6x4 but decided
+- I could have used a 3x4 and then a 4x4 mixer instead of 3x6 and 6x4 but decided
   to add a few channels for experiments (it [doesn't
   use](https://github.com/HEnquist/camilladsp#skip-processing-of-unused-channels)
-  more resources).
+  more resources anyway).
 
-- "EQ" box: I've redacted the pipeline for simplicity but there's actually quite
-  a few PK filters (mains: the first ones make my LS50 "behave" properly in an
-  anechoic chamber, the other ones are for room EQ and properly blending with
-  the sub; sub: room EQ/proper blending with the mains).
+- "EQ": I've redacted the pipeline for simplicity but there's actually quite
+  a few PK filters:
+    - mains: make LS50s have a better frequency response in an anechoic chamber
+    - mains: room EQ + properly blending with the sub
+    - sub: room EQ + properly blending with the mains
 
 - the LFE tone has a significant negative gain (-24dB) before being merged to
   the sub's signal to avoid overwhelming the sub.
 
 - the "dcp" filter removes the signal's DC compoment with a highpass (as
   implemented on the RME ADI-2 DAC - I stole the idea
-  [there](https://github.com/Wang-Yue/CamillaDSP-Monitor)
+  [there](https://github.com/Wang-Yue/CamillaDSP-Monitor)).
 
 - as mentioned elsewhere, my mains play on the M4 3rd and 4th channels, and the
   sub is on channel 0 ; that allows me to tune the bass level with the M4's
@@ -384,17 +394,17 @@ Notes:
 
 - the ASR tutorial with the rpi4 + M4 had a config for analog inputs, which is
   great eg. to quickly plug a phone - however I couldn't make it work on my
-  hardware (see [issue](https://github.com/HEnquist/camilladsp/issues/114)),
-  probably because of the old-ish kernel version I have. I'll revisit this when
-  I have a bit more time and/or if I really need the analog in - which I don't
-  now).
+  hardware (see this
+  [issue](https://github.com/HEnquist/camilladsp/issues/114)), probably because
+  of the old-ish kernel version I have. I'll revisit this when I have a bit more
+  time and/or if I really need the analog in - which I don't now).
 
 
 ## Python scripts that handle the display, buttons, rotary encoder, etc.
 
-Follow [those instructions](pymedia.md)
+See [this doc](pymedia.md)
 
 
 ## Bluetooth streamer
 
-Follow [those instructions](pipewire_bluetooth.md)
+See [this doc](pipewire_bluetooth.md)
