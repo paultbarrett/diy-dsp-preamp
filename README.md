@@ -111,6 +111,11 @@ Software:
 
 ## Installation / Setup
 
+The instructions here are for intermediate users ; if you're struggling with -
+say - installing CamillaDSP, you should read the instructions in the
+[audiosciencereview.com rpi4/camilladsp/M4
+post](https://www.audiosciencereview.com/forum/index.php?threads/rpi4-camilladsp-tutorial.29656/), where the author made a good job of explaining everything. The setup here is a bit different - multiple alsa loop devices, custom PCM configuration, switching different configurations, subwoofer LFE tone, etc.
+
 ### Overview
 
 CamillaDSP captures from [alsa loopback
