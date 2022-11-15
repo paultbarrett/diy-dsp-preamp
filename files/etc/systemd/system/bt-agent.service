@@ -1,0 +1,11 @@
+[Unit]
+Description=Bluetooth Auth Agent
+After=bluetooth.service
+PartOf=bluetooth.service
+
+[Service]
+ExecStart=/usr/bin/bt-agent --capability=NoInputNoOutput
+KillSignal=SIGINT 
+
+[Install]
+WantedBy=bluetooth.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Jacktrip server
+After=pipewire.service
+StartLimitIntervalSec=10
+
+[Service]
+Type=simple
+TimeoutStartSec=10
+TimeoutStopSec=10
+Restart=always
+RestartSec=2
+ExecStart=/usr/bin/pw-jack /usr/bin/jacktrip -s
+Nice=-10
+
+[Install]
+WantedBy=pipewire.service

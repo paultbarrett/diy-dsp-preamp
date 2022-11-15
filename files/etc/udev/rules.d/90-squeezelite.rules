@@ -1,0 +1,30 @@
+# configuration of squeezelite supported devices
+
+## we detect only controlCx devices ; see comment in /lib/udev/rules.d/78-sound-card.rules
+KERNEL!="controlC*", GOTO="conf_end"
+ACTION!="add", GOTO="conf_end"
+
+# add one line per each supported sound cards here
+#  get device ID_MODEL with `udevadm info '/dev/snd/controlCxx`
+ENV{ID_MODEL}=="ARCAM_USB_Audio_2.0", GOTO="squeezelite_conf"
+ENV{ID_MODEL}=="Transit_USB", GOTO="squeezelite_conf"
+ENV{ID_MODEL}=="C-Media_USB_Headphone_Set", GOTO="squeezelite_conf"
+ENV{ID_PATH}=="platform-snd_aloop.0", GOTO="squeezelite_conf"
+
+## skip configuration if no devices were matched above
+GOTO="conf_end"
+
+LABEL="squeezelite_conf"
+## TAG+="systemd": allow systemd to create a .device unit for this device.
+##  Note: the device unit name automatically created by systemd is escaped
+## PROGRAM=... : escape the device name ; the output of PROGRAM is then stored in '%c'
+## ENV{...}="%c": add a Want= to the .device unit, using the specified template;
+## This effectively makes systemd create an instantiated service and start it together
+## with the .device unit
+TAG+="systemd", \
+  PROGRAM="/bin/systemd-escape -p --template=squeezelite@.service $env{DEVNAME}", \
+  ENV{SYSTEMD_WANTS}+="%c"
+GOTO="conf_end"
+
+LABEL="conf_end"
+

@@ -1,0 +1,34 @@
+[Unit]
+Description=Squeezelite LMS player for device /%I
+BindTo=%i.device
+After=%i.device
+After=network.target
+StartLimitIntervalSec=10
+
+[Service]
+Type=simple
+TimeoutStartSec=10
+TimeoutStopSec=10
+Restart=always
+RestartSec=10
+User=io
+ExecStart=/usr/local/bin/squeezelite_systemd_wrapper "/%I"
+
+# SCHED_OTHER: PR = 20 + NI (NI is nice and ranges from -20 to 19)
+# SCHED_RR: PR = - 1 - real_time_priority
+# -> a SCHED_RR process has higher priority than any SCHED_OTHER
+#CPUSchedulingPolicy=rr
+
+Nice=-15
+
+# the following doesn't work
+# (https://github.com/systemd/systemd/issues/20320)
+#CPUSchedulingPriority=45
+
+# Limit*: allow memory map and rt prio when not run as root
+# (see man systemd.exec)
+# increase LimitMEMLOCK (or set to 'infinity') if you get errors like
+#  dlerror: ... failed to map segment from shared object
+#  dlerror: ... cannot open shared object file: No such file or directory
+LimitMEMLOCK=100M
+LimitRTPRIO=45

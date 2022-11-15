@@ -1,0 +1,46 @@
+#!/bin/bash
+
+FREQ=6		# Hz
+DURATION=10	# seconds
+
+gen_tone() {
+	local freq=$1
+	local duration=$2
+	local rate=$3
+	local encoding=$4
+	local bits=$5
+	local channels=$6
+	local nb_channels
+
+	echo -n "generating tone - freq:${freq}Hz duration:${duration}s "
+	echo "rate:${rate}Hz enc:${encoding} bits:${bits} channels:${channels}"
+
+	case $channels in
+		"mono"):
+			nb_channels=1
+			;;
+		"stereo"):
+			nb_channels=2
+			;;
+		*)
+			echo "error: channel arg is either mono or stereo" >&2
+			exit 1
+	esac
+
+	local out="tone_${channels}_${freq}Hz_${duration}s_"
+	out+="${rate}_${encoding}${bits}.wav"
+
+	sox --null --channels $nb_channels \
+		--rate $rate --encoding $encoding --bits $bits \
+		"$out" synth $duration sine $freq vol -1dB
+}
+
+for rate in 24000 44100 48000; do
+	#        Hz	secs
+	gen_tone 6	10	$rate	signed	16	mono
+	gen_tone 6	10	$rate	signed	32	mono
+	gen_tone 6	10	$rate	float	32	mono
+	gen_tone 400	10	$rate	signed	16	stereo
+	gen_tone 400	10	$rate	signed	32	stereo
+	gen_tone 400	10	$rate	float	32	stereo
+done

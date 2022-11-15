@@ -1,0 +1,25 @@
+[Unit]
+Description=Start pymedia %I component
+After=network.target
+Requires=redis.service
+After=redis.service
+PartOf=pymedia.target
+
+[Service]
+Type=simple
+TimeoutStartSec=10
+Restart=always
+RestartSec=4
+User=io
+WorkingDirectory=/home/io/pymedia
+#ExecStart=/usr/bin/python3 /home/io/pymedia/%i.py
+ExecStart=/home/io/pymedia/%i.py
+# use SIGINT to exit gracefully (scripts catch SystemInterrupt exceptions)
+KillSignal=SIGINT
+TimeoutStopSec=6
+EnvironmentFile=-/etc/default/pymedia
+# don't duplicate timestamps (see pymedia.py)
+Environment=FROM_SYSTEMD=1
+
+[Install]
+WantedBy=pymedia.target

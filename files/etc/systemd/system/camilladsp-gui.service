@@ -1,0 +1,14 @@
+[Unit]
+Description=CamillaDSP Backend and GUI
+After=network.target
+
+[Service]
+User=io
+ExecStart=/usr/bin/python3 /home/io/camilladsp/camillagui/main.py
+Restart=always
+RestartSec=30
+# low prio
+Nice=19
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Start/stops squeezelite
+#After=pipewire.service
+PartOf=bt-presence.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/squeezelite -o pipewire -m "b8:27:eb:91:3e:7d" -p 50 -d "all=info"
+
+[Install]
+WantedBy=bt-presence.target

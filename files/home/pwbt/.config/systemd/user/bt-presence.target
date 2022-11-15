@@ -1,0 +1,3 @@
+[Unit]
+Description=Starts/stops service bound to BT headset presence (should be managed by monitor-bt.py)
+After=pipewire.service

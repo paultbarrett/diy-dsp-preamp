@@ -1,0 +1,53 @@
+#!/bin/sh
+
+JACKD_SAMPLERATE=24000
+JACKTRIP_DEST="rockpi-s"
+
+PA_DEFAULT_SINK=$(pactl get-default-sink)
+
+JACKTRIP_PID=
+JACKD_PID=
+
+cleanup() {
+	echo cleanup
+	[ -n "$JACKTRIP_PID" ] && kill $JACKTRIP_PID
+	[ -n "$JACKD_PID" ] && kill $JACKD_PID
+	pactl unload-module module-jack-sink
+	[ -n "$PA_DEFAULT_SINK" ] && pactl set-default-sink "$PA_DEFAULT_SINK"
+	exit
+}
+
+trap 'cleanup' SIGHUP SIGINT SIGTERM
+
+if ! $(pidof jackd); then
+	jackd \
+		--no-realtime --no-mlock \
+		-d dummy \
+		--period 2048 \
+		-r $JACKD_SAMPLERATE -P 0 -C 2 &
+	JACKD_PID=$!
+
+	JACKD_OK=
+	for i in $(seq 0 10); do
+		jack_lsp && JACKD_OK=1 && break
+		echo "Waiting for jackd server to be active - try $i/10"
+		sleep 1
+	done
+	[ -z "$JACKD_OK" ] && echo "Can't start jackd after $i tries" && cleanup
+
+fi
+
+jacktrip -c ${JACKTRIP_DEST} 2>/dev/null &
+JACKTRIP_PID=$!
+
+pactl load-module module-jack-sink channels=2
+pacmd set-default-sink jack_out
+jack_connect "PulseAudio JACK Sink:front-left" "${JACKTRIP_DEST}:send_1"
+jack_connect "PulseAudio JACK Sink:front-right" "${JACKTRIP_DEST}:send_2"
+
+[ -n "$1" ] && $@ || read	# read allows ctrl-c if no args were given
+
+#mplayer -ao jack:port=${JACKTRIP_DEST} $@
+
+cleanup
+

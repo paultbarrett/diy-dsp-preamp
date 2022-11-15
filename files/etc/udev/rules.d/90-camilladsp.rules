@@ -1,0 +1,18 @@
+## we detect only controlCx devices ; see comment in /lib/udev/rules.d/78-sound-card.rules
+KERNEL!="controlC*", GOTO="conf_end"
+ACTION!="add", GOTO="conf_end"
+
+# add one line per each supported sound cards here
+#  get device ID_MODEL with `udevadm info '/dev/snd/controlCxx`
+ENV{ID_MODEL}=="M4", GOTO="camilladsp_conf"
+
+# skip camilladsp configuration if no devices were matched above
+GOTO="conf_end"
+
+LABEL="camilladsp_conf"
+TAG+="systemd", \
+  PROGRAM="/bin/systemd-escape -p --template=camilladsp@.service $env{DEVNAME}", \
+  ENV{SYSTEMD_WANTS}+="%c"
+GOTO="conf_end"
+
+LABEL="conf_end"

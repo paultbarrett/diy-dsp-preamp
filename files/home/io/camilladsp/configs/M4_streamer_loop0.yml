@@ -1,0 +1,370 @@
+devices:
+  capture_samplerate: 44100
+  chunksize: 4096
+  enable_rate_adjust: true
+  enable_resampling: true
+  resampler_type: BalancedAsync
+  samplerate: 96000
+  silence_threshold: -100
+  silence_timeout: 5
+
+  capture:
+    channels: 3
+    device: hw:Loopback0,1
+    format: S16LE
+    type: Alsa
+
+  playback:
+    channels: 4
+    device: hw:M4
+    format: S32LE
+    type: Alsa
+
+filters:
+
+# Loudness
+
+  loudnessvol:
+    type: Loudness
+    parameters:
+      ramp_time: 200.0
+      reference_level: -20.0
+      high_boost: 10.0
+      low_boost: 10.0
+
+  gain_lfetone:
+    type: Gain
+    parameters:
+      gain: -24
+
+# DC protection
+
+  dcp:
+    type: Biquad
+    parameters:
+      freq: 7
+      type: HighpassFO
+
+# Additional filters
+
+  PK 166Hz:
+    parameters:
+      freq: 166
+      gain: -2.1
+      q: 0.88
+      type: Peaking
+    type: Biquad
+  PK 550Hz:
+    parameters:
+      freq: 550
+      gain: 1.4
+      q: 3.72
+      type: Peaking
+    type: Biquad
+  PK 830Hz:
+    parameters:
+      freq: 830
+      gain: -2.4
+      q: 1.83
+      type: Peaking
+    type: Biquad
+  PK 1224Hz:
+    parameters:
+      freq: 1224
+      gain: -1.3
+      q: 9.45
+      type: Peaking
+    type: Biquad
+  PK 1609Hz:
+    parameters:
+      freq: 1609
+      gain: 2.1
+      q: 2.65
+      type: Peaking
+    type: Biquad
+  PK 2764Hz:
+    parameters:
+      freq: 2764
+      gain: -2.8
+      q: 1.35
+      type: Peaking
+    type: Biquad
+  PK 4747Hz:
+    parameters:
+      freq: 4747
+      gain: -3.4
+      q: 3.00
+      type: Peaking
+    type: Biquad
+  mainshighpass:
+    type: BiquadCombo
+    parameters:
+      type: LinkwitzRileyHighpass
+      freq: 100
+      order: 4
+  sublowpass:
+    type: BiquadCombo
+    parameters:
+      type: LinkwitzRileyLowpass
+      freq: 100
+      order: 4
+  REW MAINS 0:
+    parameters:
+      freq: 134
+      gain: -5.7
+      q: 2.003
+      type: Peaking
+    type: Biquad
+  REW MAINS 1:
+    parameters:
+      freq: 166.5
+      gain: -2.7
+      q: 2.172
+      type: Peaking
+    type: Biquad
+  REW SUB 0:
+    parameters:
+      freq: 24
+      gain: -11.8
+      q: 3.58
+      type: Peaking
+    type: Biquad
+  REW SUB 1:
+    parameters:
+      freq: 28
+      gain: 12.0
+      q: 4.10
+      type: Peaking
+    type: Biquad
+  REW SUB 2:
+    parameters:
+      freq: 30
+      gain: -10.6
+      q: 11.48
+      type: Peaking
+    type: Biquad
+  REW SUB 3:
+    parameters:
+      freq: 37
+      gain: -3.7
+      q: 8.51
+      type: Peaking
+    type: Biquad
+  REW SUB 4:
+    parameters:
+      freq: 43
+      gain: -6.8
+      q: 9.94
+      type: Peaking
+    type: Biquad
+  REW SUB 5:
+    parameters:
+      freq: 49
+      gain: 7.4
+      q: 4.90
+      type: Peaking
+    type: Biquad
+  REW SUB 6:
+    parameters:
+      freq: 53
+      gain: -8.4
+      q: 5.12
+      type: Peaking
+    type: Biquad
+  REW SUB 7:
+    parameters:
+      freq: 93
+      gain: 7.7
+      q: 3.88
+      type: Peaking
+    type: Biquad
+  REW SUB 8:
+    parameters:
+      freq: 121
+      gain: -4.4
+      q: 15.50
+      type: Peaking
+    type: Biquad
+
+# Mixers
+
+mixers:
+
+  # 6 channels:
+  # 0: src: stereo L
+  # 1: src: stereo R
+  # 2: src: lfe "wake-up" tone
+  # 3: unused
+  # 4: src: 0+1 (stereo downmix to mono)
+  # 5: unused
+  3x6:
+    channels:
+      in: 3
+      out: 6
+    mapping:
+    - dest: 0
+      # MAINS L
+      mute: false
+      sources:
+      - channel: 0
+        gain: -3.0
+        inverted: false
+        mute: false
+    - dest: 1
+      # MAINS R
+      mute: false
+      sources:
+      - channel: 1
+        gain: -3.0
+        inverted: false
+        mute: false
+    - dest: 2
+      # LFE TONE
+      mute: false
+      sources:
+      - channel: 2
+        gain: 0
+        inverted: false
+        mute: false
+    # - dest 3: unused
+    - dest: 4
+      # SUB L+R
+      mute: false
+      sources:
+      - channel: 0
+        gain: 0
+        inverted: false
+        mute: false
+      - channel: 1
+        gain: 0
+        inverted: false
+        mute: false
+    # - dest 5: unused
+
+  # 4 channels
+  # 0: unused
+  # 1: sub
+  # 2: mains L
+  # 3: mains R
+  6x4:
+    channels:
+      in: 6
+      out: 4
+    mapping:
+    - dest: 1
+      # Sub: mix with lfe wake-up tone
+      mute: false
+      sources:
+      - channel: 2
+        # LFE Tone 
+        gain: 0
+        inverted: false
+        mute: false
+      - channel: 4
+        # Sub
+        gain: 0
+        inverted: false
+        mute: false
+    # Mains L
+    - dest: 2
+      mute: false
+      sources:
+      - channel: 0
+        # Mains L
+        gain: 0
+        inverted: false
+        mute: false
+    # Mains R
+    - dest: 3
+      mute: false
+      sources:
+      - channel: 1
+        # Mains R
+        gain: 0
+        inverted: false
+        mute: false
+
+# Pipeline
+
+pipeline:
+
+# Mixer 3 -> 6
+- name: 3x6
+  type: Mixer
+
+# mains L
+- channel: 0
+  names:
+  - loudnessvol
+  - mainshighpass
+  - PK 166Hz
+  - PK 550Hz
+  - PK 830Hz
+  - PK 1224Hz
+  - PK 1609Hz
+  - PK 2764Hz
+  - PK 4747Hz
+  - REW MAINS 0
+  type: Filter
+
+# mains R
+- channel: 1
+  names:
+  - loudnessvol
+  - mainshighpass
+  - PK 166Hz
+  - PK 550Hz
+  - PK 830Hz
+  - PK 1224Hz
+  - PK 1609Hz
+  - PK 2764Hz
+  - PK 4747Hz
+  - REW MAINS 0
+  type: Filter
+
+# LFE wake-up tone ; set a gain filter here rather than setting
+# the gain in the mixer (seems a *bit* more error-proof, to prevent
+# having the tone played at max volume)
+- channel: 2
+  names:
+  - gain_lfetone
+  type: Filter
+
+# Sub
+- channel: 4
+  names:
+  - loudnessvol
+  - sublowpass
+  - REW SUB 0
+  - REW SUB 1
+  - REW SUB 2
+  - REW SUB 3
+  - REW SUB 4
+  - REW SUB 5
+  - REW SUB 6
+  - REW SUB 7
+  - REW SUB 8
+  type: Filter
+
+# Mixer 6 -> 4
+- name: 6x4
+  type: Mixer
+
+# DC protection on all channels
+
+- channel: 0
+  names:
+    - dcp
+  type: Filter
+- channel: 1
+  names:
+    - dcp
+  type: Filter
+- channel: 2
+  names:
+    - dcp
+  type: Filter
+- channel: 3
+  names:
+    - dcp
+  type: Filter

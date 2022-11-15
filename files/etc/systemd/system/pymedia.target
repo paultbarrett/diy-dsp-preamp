@@ -1,0 +1,6 @@
+[Unit]
+Description=Start pymedia scripts
+
+[Install]
+WantedBy=multi-user.target
+

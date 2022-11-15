@@ -1,0 +1,10 @@
+[Unit]
+Description=Start/stops arecord|aplay pipe from alsa loopback1
+PartOf=bt-presence.target
+
+[Service]
+Type=simple
+ExecStart=/home/pwbt/bin/alsa-loop-loopback1
+
+[Install]
+WantedBy=bt-presence.target

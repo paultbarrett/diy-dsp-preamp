@@ -1,0 +1,10 @@
+[Unit]
+Description=Start/stops squeezelite based on 5K presence
+After=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pwbt/bin/monitor_bt.py
+
+[Install]
+WantedBy=default.target
