@@ -75,18 +75,22 @@ Hardware:
 - [Motu M4](https://motu.com/m4) sound interface 4 channels (or USB) in / 4
   channels out; this interface got [pretty good
   measurements/reviews](https://www.audiosciencereview.com/forum/index.php?threads/motu-m4-audio-interface-review.15757/)
-  on ASR.
-- Rotary encoder with software debouncing for volume
-- Buttons for pause/mute and switching CamillaDSP configs
-- i2c display that shows the volume, mute status, player status, RMS/peak dB,
-  and CamillaDSP config index.
-- a custom breakout board, mostly with resistors for gpio inputs and a few
-  capacitors for filtering. (You could probably do without that board)
+  on ASR. But TBH, I don't think I could hear the difference of DACs with worse
+  measurements, so any decent interface should work.
+- Rotary encoder (on GPIO inputs) with software debouncing for the master volume
+- Buttons (on GPIO inputs) for pause/mute and switching CamillaDSP configs
+- small i2c [oled
+  display](https://www.winstar.com.tw/products/oled-module/graphic-oled-display/dual-color-oled.html)
+  that shows the volume, mute status, player status, RMS/peak dB, and
+  CamillaDSP config index.
+- a custom breakout board, mostly with resistors to protect gpio inputs and a
+  few capacitors for filtering. (one could do without that board)
 - a "master" switch to switch 5V and 220V (via relay+fuse) to the amp/sub/M4
   (also not needed per se. - just provides convenience of turning off/on
   everything at once).
-- a BT dongle for streaming LDAC audio via BT (that's a standalone setup, not
-  related to anything above)
+- a [BT dongle](https://www.tp-link.com/us/home-networking/usb-adapter/ub500/)
+  for streaming LDAC audio via BT (that's a standalone setup, not related to
+  anything above)
 
 Software:
 
@@ -94,8 +98,9 @@ Software:
 - [CamillaDSP](https://github.com/HEnquist/camilladsp)
 - pipewire/wireplumber for the BT setup
 - pipewire/wireplumber/jacktrip for playing audio sent from other devices
-- and finally a few custom python programs to manage the hardware, CamillaDSP,
-  automatically playing an inaudible tone to "wake-up" the subwoofer, etc.
+- and finally a few custom python programs to manage the GPIOs, CamillaDSP,
+  automatically play an inaudible tone to "wake-up" the subwoofer, display
+  the volume/levels/... on the i2c display, etc.
 
 
 ## Installation / Setup
