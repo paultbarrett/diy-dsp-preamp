@@ -43,9 +43,11 @@ it shouldn't be done. YMMW). That + wanting to EQ the whole setup (eg. with
 [REW](https://www.roomeqwizard.com/)) made me look into available DSP solutions.
 
 Research showed that there were either >1000 USD gear (the usual audiophile BS),
-noisy gear (miniDSP 2x4), OK-ish gear (miniDSP 2x4 HD), or somewhere in the
-"middle" the miniDSP Flex. The latter looked like a great option, albeit a bit
-expensive; however a
+noisy gear (eg. miniDSP 2x4), OK-ish gear (eg. [miniDSP 2x4
+HD](https://www.minidsp.com/products/minidsp-in-a-box/minidsp-2x4-hd)), or
+somewhere in the "middle" the [miniDSP
+Flex](https://www.minidsp.com/products/minidsp-in-a-box/flex). The latter looked
+like a great option, albeit a bit expensive; however a
 [post](https://www.audiosciencereview.com/forum/index.php?threads/rpi4-camilladsp-tutorial.29656/)
 on ASR about a rpi4 + CamillDSP + Motu M4 4 channel interface piqued my
 curiosity so I decided to go the "DIY" way given that I already had some gear at
