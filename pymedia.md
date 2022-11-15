@@ -123,7 +123,7 @@ systemctl enable pymedia@lfe_tone
 
 Q/Why use systemd user services (eg. pipewire/jacktrip) and systemd system
 service here (especially when they're run as user 'io'): I tried, but camilladsp
-is started by udev as a service template so we'd have to start camilladsp
+is started by udev as a service template so camilladsp would have to be started
 together with the "pymedia" programs ; that could be done with a target but 1/
 pymedia programs aren't necessarily bound to a sound interface (eg. the display
 is device agnostic) and 2/ pymedia stuff require redis to run before being

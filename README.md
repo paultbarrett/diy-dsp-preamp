@@ -132,20 +132,20 @@ intervals on alsa loopback #0's 3rd channel to keep the subwoofer turned on
 
 ### Alsa setup
 
-We use two alsa loop devices (see note #2 in [Config 1:
+Two alsa loop devices are used (see note #2 in [Config 1:
 pipewire/jacktrip](#config-1-pipewirejacktrip)).
 
 As root:
 
 ```
 echo "snd-aloop.conf" > /etc/modules-load.d/snd-aloop.conf
-# we use two loopbacks - one for LMS/squeezelite, one for pipewire/jack
+# use two loopbacks - one for LMS/squeezelite, one for pipewire/jack
 echo "options snd-aloop index=0,1 enable=1,1 pcm_substreams=1,1 " \
     "id=\"Loopback0\",\"Loopback1\" > /etc/modprobe.d/snd-aloop.conf
 ```
 
-Since we play stereo content on the first two channels of alsa loopback and an
-intermittent LFE tone on the 3rd, we need a bit more work to "present" the
+Since stereo content is played on the first two channels of alsa loopback and an
+intermittent LFE tone on the 3rd, a bit more work is required to "present" the
 loopback device to playing apps as individual, standalone PCMs (as playing to
 the loopback directly from both apps won't work). Note: CamillaDSP captures the
 whole loopback so no need for any custom configuration on the "capture side".
