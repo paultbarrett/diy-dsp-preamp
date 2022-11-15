@@ -130,13 +130,15 @@ Software:
   automatically play an inaudible tone to "wake-up" the subwoofer, display
   the volume/levels/... on the i2c display, etc.
 
-
 ## Installation / Setup
 
 The instructions here are for intermediate users ; if you're struggling with -
-say - installing CamillaDSP, you should read the instructions in the
+say - installing CamillaDSP, you should read the instructions given in the
 [audiosciencereview.com rpi4/camilladsp/M4
-post](https://www.audiosciencereview.com/forum/index.php?threads/rpi4-camilladsp-tutorial.29656/), where the author made a good job of explaining everything. The setup here is a bit different - multiple alsa loop devices, custom PCM configuration, switching different configurations, subwoofer LFE tone, etc.
+post](https://www.audiosciencereview.com/forum/index.php?threads/rpi4-camilladsp-tutorial.29656/),
+where the author makes a good job at explaining everything. The setup here is a
+bit different - multiple alsa loop devices, custom PCM configuration, switching
+different configurations, subwoofer LFE tone, etc.
 
 ### Overview
 
@@ -324,13 +326,13 @@ Relevant files:
 - CamillaDSP captures from alsa loopback 1,1
 
 Note #1 - why jacktrip: because that's the only option that worked for me:
-jack's net 1 doesn't work because the "server" is actually the client and for
-various reasons I can't allow a remote device to connect to my laptop. Jack's
-net 2 is multicast only (which doesn't work with VMs in Qubes OS laptop).
-Pulseaudio (or pipewire)'s simple TCP protocol has way too much latency (and tcp
-over tcp is a bad idea anyway). A RTP sink may have worked but debian didn't
-package them for pipewire and I didn't feel like going into compiling custom
-packages. So - jacktrip it is.
+jack's netJACK1 ("netone") doesn't work because the "server" is actually the
+client and for various reasons I can't allow a remote device to connect to my
+laptop. Jack's netJACK2 is multicast only (which doesn't work with VMs in my
+Qubes OS laptop either). Pulseaudio (or pipewire)'s simple TCP protocol has way
+too much latency (and tcp over tcp is a bad idea anyway). A RTP sink may have
+worked but debian didn't package them for pipewire and I didn't feel like going
+into compiling custom packages. So - jacktrip it is.
 
 Note #2 - why two alsa loopback devices: because it's much easier, given
 squeezelite and jacktrip's different sample rates (44100Hz vs. 24000Hz), the
