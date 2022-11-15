@@ -374,12 +374,14 @@ See [those instructions](jacktrip_client.md) to use jacktrip on the client(s).
 
 ## Camilla DSP GUI (optional)
 
-[download](https://github.com/HEnquist/camillagui-backend/releases)
+[Download](https://github.com/HEnquist/camillagui-backend/releases)
 
-as root:
+Install dependencies - as root:
 
-`apt install python3-pip python3-websocket python3-aiohttp python3-jsonschema \
-	python3-numpy python3-matplotlib unzip git gettext-base python3-yam`
+```
+apt install python3-pip python3-websocket python3-aiohttp python3-jsonschema \
+  python3-numpy python3-matplotlib unzip git gettext-base python3-yam
+```
 
 as `io` user:
 
