@@ -1,4 +1,4 @@
-# install a recent pipewire on debian
+# Installing a recent pipewire on debian
 
 ```
 echo 'APT::Default-Release "stable";' | sudo tee /etc/apt/apt.conf.d/99defaultrelease
@@ -7,12 +7,14 @@ sudo apt update
 sudo apt -t testing install pipewire wireplumber
 ```
 
-on a headless setup:
+note - on a headless setup, `default_access.enable()` must be commented in
+wireplumber's `main.lua.d/90-enable-all.lua` or it won't start (those fixes are
+included in the sample configurations).
 
-wireplumber:
-- comment `default_access.enable()` in `main.lua.d/90-enable-all.lua`
+also, to avoid pipewire/wireplumber from starting when ssh'in as user `user` or
+`io`:
 
-also, to avoid pipewire/wireplumber from starting when ssh'in as user `user`:
+as user:
 
 ```
 systemctl --user disable pipewire.socket
