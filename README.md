@@ -199,7 +199,7 @@ Useful `dshare` resources:
 - [Audio multi-channel routing and mixing using alsalib](https://bootlin.com/blog/audio-multi-channel-routing-and-mixing-using-alsalib/)
 - [Alsa doc / Dshare](https://alsa.opensrc.org/Dshare)
 
-Note: we're using alsa `hw` devices so the sample rate, format and number of
+Note: alsa `hw` devices are used so the sample rate, format and number of
 channels of the various producers/consumers **must** match. Alsa's
 [`snd-aloop` doc](https://www.alsa-project.org/main/index.php/Matrix:Module-aloop)
 also mentions this property:
@@ -228,7 +228,7 @@ CamillaDSP startup "sequence" overview:
 
 
 [Download camillaDSP](https://github.com/HEnquist/camilladsp/releases)
-(linux-aarch64)
+(linux-aarch64) and copy the binary to `/usr/local/bin/camilladsp`
 
 as root:
 
@@ -253,8 +253,8 @@ Files - see:
 /usr/local/bin/camilladsp_systemd_wrapper
 ```
 
-and `/home/io/camilladsp/configs/`
-
+Configuration files are in `/home/io/camilladsp/configs/` (see [My CamillaDSP
+Setup](#my-camilladsp-setup) for more info).
 
 
 ### Config 0: LMS/squeezelite
@@ -292,7 +292,8 @@ Installation:
 
 Download the [aarch64
 version](https://sourceforge.net/projects/lmsclients/files/squeezelite/linux/)
-non-pulse version of squeezelite and copy to `/usr/local/bin/squeezelite`
+non-pulse version of squeezelite and copy the binary to
+`/usr/local/bin/squeezelite`
 
 Install dependencies - as root:
 
@@ -300,7 +301,7 @@ Install dependencies - as root:
 apt install libasound2 libmad0 libfaad2 libmpg123-0 libvorbisidec1 libopusfile0
 ```
 
-Files - see:
+Relevant files:
 
 ```
 /etc/udev/rules.d/90-dac.rules
@@ -350,7 +351,7 @@ Follow these [instructions](pipewire_debian_testing.md) to install a recent
 version of pipewire and wireplumber as at the time of writing the versions
 packaged are prehistoric.
 
-config files:
+Relevant config files:
 
 ```
 /home/pw/.config/wireplumber/main.lua.d/90-enable-all.lua
@@ -400,7 +401,6 @@ templates  with `envsubst` (custom building script - not included here)
 ## My CamillDSP setup
 
 (The configuration files I use are in `/home/io/camilladsp/configs/`.)
-
 
 Pipeline:
 
