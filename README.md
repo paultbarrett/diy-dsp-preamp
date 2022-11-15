@@ -440,16 +440,17 @@ Notes:
 
 - I use CamillaDSP's dynamic volume ('loudness' filter) as a master volume. That
   means my sub and amp volume knobs are fixed and I only use the rotary encoder.
-  That means my integrated stereo amp basically works as a power amp (I've
+  That also means my integrated stereo amp basically works as a power amp (I've
   measured its gain - output voltage vs. input - and set the gain to be around
-  +24dB ; so a bit less than the standard -27dB in hi-fi power amps).
+  +24dB ; so a bit less than the standard +27dB in hi-fi power amps).
 
 - the ASR tutorial with the rpi4 + M4 had a config for analog inputs, which is
   great eg. to quickly plug a phone - however I couldn't make it work on my
   hardware (see this
   [issue](https://github.com/HEnquist/camilladsp/issues/114)), probably because
-  of the old-ish kernel version I have. I'll revisit this when I have a bit more
-  time and/or if I really need the analog in - which I don't now).
+  of the old-ish kernel version currently provided by armbian. I'll revisit this
+  when I have a bit more time and/or if I really need the analog in - which I
+  don't now).
 
 
 ## Python scripts that handle the display, buttons, rotary encoder, etc.
