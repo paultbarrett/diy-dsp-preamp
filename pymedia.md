@@ -94,8 +94,9 @@ Resources:
 - [LMS cli
   doc](https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md)
 
-I've packaged the files and added a timeout and connection keepalive. Note:
-LMSquery's license is MIT)
+I've packaged the files and [added
+support](https://github.com/roberteinhaus/lmsquery/pull/3) for a timeout and
+connection re-use/keepalive.
 
 Required dependency - as root:
 
