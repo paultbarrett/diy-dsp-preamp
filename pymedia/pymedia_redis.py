@@ -104,6 +104,25 @@ class RedisHelper():
                     f"wait_set=True and {self.pubsub_name}:last_alive isn't",
                     f" set to {time_now} after {wait_set_tries} tries")
 
+    def check_alive(self, pubsub_name, max_age=10):
+        """Check if a 'last_alive' key was set less than max_age sec. ago."""
+        last_alive = self.get_s(f"{pubsub_name}:last_alive")
+
+        if last_alive is None:
+            logging.error("no '%s:last_alive' key", pubsub_name)
+            return False
+
+        try:
+            if time.time() - float(last_alive) < max_age:
+                return True
+        except TypeError:
+            logging.error("'%s:last_alive' isn't a float", pubsub_name)
+        else:
+            logging.debug("%s hasn't updated redis in %s seconds",
+                          pubsub_name, max_age)
+
+        return False
+
     def update_stats(self, stats, send_data_changed_event = False):
         """Update NAME:keys with dictionnary values
 

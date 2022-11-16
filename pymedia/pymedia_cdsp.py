@@ -363,17 +363,4 @@ def redis_cdsp_ping(redis_r, max_age=20):
     if not bool(redis_r.get_s("CDSP:is_on")):
         logging.debug("Cdsp isn't running")
         return False
-    cdsp_last_alive = redis_r.get_s("CDSP:last_alive")
-    if cdsp_last_alive is None:
-        logging.error("no 'CDSP:last_alive' key")
-        return False
-
-    try:
-        if time.time() - float(cdsp_last_alive) > max_age:
-            logging.debug("Cdsp hasn't updated redis in %s seconds", max_age)
-            return False
-    except TypeError:
-        logging.error("cdsp_last_alive isn't a float")
-        return False
-
-    return True
+    return redis_r.check_alive('CDSP', max_age)
