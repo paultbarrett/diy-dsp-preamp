@@ -157,4 +157,5 @@ easier to do it with system services.
 
 ## License
 
-Everything is GPL2 (see [LICENSE](LICENSE)) with the eceptio
+Everything is GPL2 (see [LICENSE](LICENSE)) with the exception of LMSquery,
+which is MIT)
