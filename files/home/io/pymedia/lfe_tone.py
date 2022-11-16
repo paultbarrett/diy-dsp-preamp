@@ -7,8 +7,13 @@
 import logging
 import time
 import subprocess
+import os
 
-import pymedia
+import pymedia_redis
+import pymedia_utils
+from pymedia_cdsp import redis_cdsp_ping
+
+from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
 # ---------------------
 
@@ -31,13 +36,13 @@ import pymedia
 LFE_TONE_DEFS = [
         # confix index 0
         {
-            'file' : (pymedia.HOMEDIR
+            'file' : (os.environ.get('HOME')
                       + "/sounds/tone_mono_6Hz_10s_44100_signed16.wav"),
             'device' : "Loopback0_0_c2",
             },
         # confix index 1
         {
-            'file' : (pymedia.HOMEDIR
+            'file' : (os.environ.get('HOME')
                       + "/sounds/tone_mono_6Hz_10s_24000_float32.wav"),
             # use plug: plugin to avoid IPC permission issues - camilladsp and
             # pipewire run as different users but setting ipc_perm in
@@ -61,7 +66,7 @@ class LfeTone():
         self._last_played_lfe_tone = self._redis.get_s("LFE_TONE:last_played")
         if self._last_played_lfe_tone is None:
             self._last_played_lfe_tone = 0
-        self.threads = pymedia.SimpleThreads()
+        self.threads = pymedia_utils.SimpleThreads()
         self.threads.add_target(self.loop_play)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
 
@@ -106,7 +111,7 @@ class LfeTone():
         # avoid keeping the subwoofer on when not needed
         if not skip_tests:
 
-            if not pymedia.cdsp_ping(self._redis, max_age=10):
+            if not redis_cdsp_ping(self._redis, max_age=10):
                 self._log.debug("cdsp isn't on - noop")
                 return
 
@@ -160,7 +165,8 @@ class LfeTone():
 
 if __name__ == '__main__':
 
-    _redis = pymedia.RedisHelper('LFE_TONE')
+    _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+                                       'LFE_TONE')
 
     lfe_tone = LfeTone(_redis)
 

@@ -10,7 +10,10 @@ import threading
 
 import gpiod
 
-import pymedia
+import pymedia_redis
+import pymedia_utils
+
+from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
 # ---------------------
 
@@ -115,7 +118,8 @@ def mute():
 
 if __name__ == '__main__':
 
-    REDIS = pymedia.RedisHelper('GPIOS')
+    REDIS = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+                                      'GPIOS')
 
     gpiochip0 = gpiod.Chip("gpiochip0")
     gpiochip1 = gpiod.Chip("gpiochip1")
@@ -123,7 +127,7 @@ if __name__ == '__main__':
 
     panel_led = GpioOutputPin(gpiochip0, 17)
 
-    threads = pymedia.SimpleThreads()
+    threads = pymedia_utils.SimpleThreads()
     # rear panel led
     threads.add_target(panel_led.blink, interval=2)
     # front panel push button

@@ -11,7 +11,11 @@ import time
 import requests
 import lmsquery
 
-import pymedia
+import pymedia_utils
+import pymedia_redis
+from pymedia_cdsp import redis_cdsp_ping
+
+from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
 # ---------------------
 
@@ -37,7 +41,7 @@ class Lms():
                 'isplaying' : False,
                 'power' : False,
                 }
-        self.threads = pymedia.SimpleThreads()
+        self.threads = pymedia_utils.SimpleThreads()
         self.threads.add_target(self.update_loop)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
 
@@ -101,7 +105,7 @@ class Lms():
 
         self._redis.set_alive()
 
-        if not pymedia.cdsp_ping(self._redis, max_age=10):
+        if not redis_cdsp_ping(self._redis, max_age=10):
             # no use to refresh stuff if cdsp isn't on
             self._log.debug("CDSP isn't running - won't refresh")
             return
@@ -157,7 +161,8 @@ class Lms():
 if __name__ == '__main__':
 
     # register as PLAYER
-    _redis = pymedia.RedisHelper('PLAYER')
+    _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+                                       'PLAYER')
 
     lms = Lms(LMS_SERVER, LMS_PLAYERID, _redis)
 

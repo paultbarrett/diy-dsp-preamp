@@ -15,7 +15,10 @@ import busio
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
-import pymedia
+import pymedia_redis
+from pymedia_cdsp import redis_cdsp_ping
+
+from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
 # ---------------------
 
@@ -174,7 +177,7 @@ class Display():
 
         self._log.debug("refreshing display - thread ID is %d", update_id)
 
-        if not pymedia.cdsp_ping(self._redis, max_age=10):
+        if not redis_cdsp_ping(self._redis, max_age=10):
             self._log.debug("CDSP isn't running - display is off")
             self.blank()
             return
@@ -246,7 +249,8 @@ class Display():
 
 if __name__ == '__main__':
 
-    _redis = pymedia.RedisHelper('DISPLAY')
+    _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+                                       'DISPLAY')
 
     display = Display(_redis)
     display.t_wait_events.start()
