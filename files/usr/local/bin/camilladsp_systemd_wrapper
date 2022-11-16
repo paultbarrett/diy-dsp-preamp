@@ -1,0 +1,52 @@
+#!/bin/bash
+
+CDSP_BIN="/usr/local/bin/camilladsp"
+
+CDSP_OPTS=()
+
+# default options
+
+## get current volume from redis - if any
+## (make sure the gain is negative and numeric)
+VOL=$(redis-cli --raw get "CDSP:volume" | grep '^-[0-9]\+$')
+## default if redis key doesn't exist or is invalid
+[ -z "$VOL" ] && VOL="-40"
+CDSP_OPTS+=(-g$VOL)	# start with output muted @ -40dB
+
+#CDSP_OPTS+=(-v)	# debug
+
+
+# ------------------------
+
+err() {
+	echo "$(basename "$0"): $*" >&2
+	exit 1
+}
+
+# ------------------------
+
+DEV=$1
+
+[ -x "$CDSP_BIN" ] || err "'$CDSP_BIN' isn't executable'"
+[ -e "$DEV" ] || err "'$DEV' doesn't exist"
+[ -w "$DEV" ] || err "'$DEV' isn't writeable ; check permissions ?"
+
+ID_MODEL=$(udevadm info -q property "$DEV" | sed -ne 's/ID_MODEL=\(.*\)/\1/p')
+[ -z "$ID_MODEL" ] && err "Couldn't get ID_MODEL from device '$DEV' ; reverting to ID_PATH"
+
+CDSP_CONFIG="$HOME/camilladsp/configs/$ID_MODEL.yml"
+
+## override / add options based on device model
+case "$ID_MODEL" in
+	"M4")
+		CDSP_OPTS+=(-p 1234)
+		CDSP_CONFIG="$HOME/camilladsp/configs/M4_streamer_loop0.yml"
+		;;
+esac
+
+## final tests
+[ -e "$CDSP_CONFIG" ] || err "Config file doesn't exist: '$CDSP_CONFIG'"
+
+## run
+set -x
+exec $CDSP_BIN ${CDSP_OPTS[@]} "$CDSP_CONFIG"

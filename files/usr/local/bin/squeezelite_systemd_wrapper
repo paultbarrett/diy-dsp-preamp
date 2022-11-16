@@ -1,0 +1,85 @@
+#!/bin/bash
+
+SLITE_BIN=/usr/local/bin/squeezelite
+
+SLITE_OPTS=()
+# default options
+#SLITE_OPTS+=(-p 50)		# realtime prio (default is 45)
+SLITE_OPTS+=(-d output=info)	# be a bit verbose
+
+#SLITE_OPTS+=(-d all=debug -f /tmp/s.log)
+
+
+# ------------------------
+
+err() {
+	echo "$(basename "$0"): $*" >&2
+	exit 1
+}
+
+# ------------------------
+
+DEV=$1
+
+[ -x "$SLITE_BIN" ] || err "'$SLITE_BIN' isn't executable'"
+[ -e "$DEV" ] || err "'$DEV' doesn't exist"
+[ -w "$DEV" ] || err "'$DEV' isn't writeable ; check permissions ?"
+
+ID_MODEL=$(udevadm info -q property "$DEV" | sed -ne 's/ID_MODEL=\(.*\)/\1/p')
+if [ -z "$ID_MODEL" ]; then
+	echo "Couldn't get ID_MODEL from device '$DEV' ; reverting to ID_PATH" >&2
+	ID_MODEL=$(udevadm info -q property "$DEV" | sed -ne 's/ID_PATH=\(.*\)/\1/p')
+fi
+[ -n "$ID_MODEL" ] || err "Empty ID_MODEL"
+
+
+# automatically set some variables based on the model name ; they can be
+# overriden on a per-model basis if needed in the case/esac statement later-on
+
+## name
+## (max length is 32 char; take the first 10 of the hostname and first 21 of ID_MODEL)
+PLAYER_NAME="${HOSTNAME::10}-${ID_MODEL::21}"
+
+## set a (fake) unique mac address from hostname and ID_MODEL
+PLAYER_MAC=$(echo "$HOSTNAME $ID_MODEL" | md5sum | sed -E -e 's/^(..)(..)(..)(..)(..)(..).*/\1:\2:\3:\4:\5:\6/')
+
+## squeezelite output
+PLAYER_OUTPUT=
+# path example: /devices/platform/ff440000.usb/usb2/2-1/2-1:1.0/sound/card3/controlC3
+CARD_NUM=$(udevadm info "$DEV" -q path | sed -E -e 's/.*\/sound\/card([0-9]+)\/.*/\1/')
+if [ -n "$CARD_NUM" ] && [ -e "/proc/asound/card${CARD_NUM}/id" ]; then
+	PLAYER_OUTPUT="hw:CARD=$(cat "/proc/asound/card${CARD_NUM}/id"),DEV=0"
+fi
+
+## override / add options based on device model
+case "$ID_MODEL" in
+	"ARCAM_USB_Audio_2.0")
+		#PLAYER_NAME="Arcam"
+		PLAYER_MAC="63:b3:8b:ae:e0:a7"
+		SLITE_OPTS+=(-a '80:::1')
+		#SLITE_OPTS+=(-C 240)
+		;;
+	"Transit_USB")
+		#PLAYER_NAME="transit"
+		#PLAYER_MAC="63:b3:8b:ae:e0:a7"
+		SLITE_OPTS+=(-a '80:::1')
+		#SLITE_OPTS+=(-C 240)
+		;;
+	"C-Media_USB_Headphone_Set")
+		SLITE_OPTS+=(-a '80:::1')
+		;;
+	"platform-snd_aloop.0")	# used with camillaDSP
+		PLAYER_NAME="$(hostname)"
+		PLAYER_OUTPUT="Loopback0_0_c01"	# defined in .asoundrc
+		#SLITE_OPTS+=(-W -C 5 -r 44100-44100 -R hLE:::28)
+		SLITE_OPTS+=(-r 44100-44100 -R hLE:::28)
+		;;
+esac
+
+## final tests
+[ -n "$PLAYER_OUTPUT" ] || err "Empty PLAYER_OUTPUT variable"
+
+## run
+set -x
+exec $SLITE_BIN ${SLITE_OPTS[@]} -o "$PLAYER_OUTPUT" -n "$PLAYER_NAME" -m "$PLAYER_MAC"
+
