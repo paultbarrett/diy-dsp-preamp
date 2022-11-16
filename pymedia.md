@@ -1,6 +1,6 @@
 # "pymedia" python programs
 
-(see `/home/io/pymedia/*.py`)
+(see `pymedia/*.py`)
 
 Those are a collection of programs with redis as IPC. Overview (look at comments
 in the code for more info):
@@ -55,6 +55,9 @@ threads, I refactored everything to use threads. It ended up being much simpler.
 
 
 ## Installation
+
+After cloning this repo copy `pymedia/` to `/home/io/`.
+
 
 ### I2C / GPIO
 
