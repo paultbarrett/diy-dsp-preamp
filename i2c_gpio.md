@@ -29,7 +29,9 @@ If not you'd have to add the proper udev permissions; see
 `/etc/udev/rules.d/99-gpiochip.rules`
 
 
-## I2C (rockpi-s)
+## I2C
+
+### Rockpi-S setup
 
 I2C/SPI/UART/... need to be enabled via overlays:
 
@@ -56,7 +58,11 @@ Note: the serial console uses i2c0 pins ; if i2c0 is needed:
 
 ### I2C Peripherals
 
-Add user to group i2c.
+Add user to group i2c:
+
+```
+usermod -aG i2c username
+```
 
 Adafruit / 5.x armbian: `pip3 install adafruit-extended-bus`
 
@@ -66,31 +72,6 @@ Adafruit / 5.x armbian: `pip3 install adafruit-extended-bus`
 - DPS310 barometer: `pip3 install adafruit-circuitpython-dps310`
   [adafruit repo](https://github.com/adafruit/Adafruit_CircuitPython_DPS310)
 
-## monitoring (wip)
-
-I use snmpd's `extend` feature to run the python script and return the values
-for use in Zabbix. This is probably much lighter than installing zabbix-agent
-and using a custom userParameter entry.
-
-eg. snmpd.conf: `extend  weather /path/to/the/python/script`
-
-this can then be accessed at oid
-`NET-SNMP-EXTEND-MIB::nsExtendOutputFull."weather"`, eg. with `snmpget -v2c -c
-community -On rockpi-s 'NET-SNMP-EXTEND-MIB::nsExtendOutputFull."weather"'`
-
-notes:
-
-- fix permissions according to your setup. Eg. instead of adding the snmpd user
-  to the i2c group, I'm running the script with sudo and a properly configured
-  sudoers.d entry.
-- add locking to prevent concurrent use - eg. if concurrent snmp queries are
-  sent. (on my setup I also store the values to a temp file and read them from
-  there if they're not older than x seconds ; I can upload the script it if
-  someone is interested).
-
-zabbix: see the exported xml template; it's using a snmpv2 type (snmpv1 would
-work too) using the oid above and two dependent items for pressure/temperature,
-parsing the main item with a regex (eg.  `(^| )temp:(-?[0-9\.]+)( |$)`).
 
 ## Header pinout
 
