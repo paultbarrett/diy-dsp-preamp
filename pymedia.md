@@ -154,8 +154,3 @@ started and systemd user services can't "Require:" system services. So we'd
 have to come up with a way to wait for redis ; it's not hard - a simple query
 loop and we'd be good. But - again - while all of this is feasible, it was much
 easier to do it with system services.
-
-## License
-
-Everything is GPL2 (see [LICENSE](LICENSE)) with the exception of LMSquery,
-which is MIT)
