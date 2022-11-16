@@ -2,8 +2,12 @@
 
 (see `pymedia/*.py`)
 
-Those are a collection of programs with redis as IPC. Overview (look at comments
-in the code for more info):
+Those are a collection of programs that manage the physical user interface
+(buttons, volume knob, ...) and display. they use redis as IPC (which is
+optional for some of the classes so it's still easy to quickly code - say - a
+standalone volume controller with software debouncing for CamillaDSP).
+
+Overview (look at comments in the code for more info):
 
 - `cdsp.py`: (loop) connect to a running CamillaDSP instance, listen to/process
   volume change, mute, config change, events, etc., send events on
@@ -32,6 +36,10 @@ in the code for more info):
   (no polling), uses a [state machine](https://github.com/buxtronix/arduino/tree/master/libraries/Rotary)
   for proper processing/debouncing, and buffers/reprocess volume events that are
   too close to avoid sending too many volume changes to CamillaDSP
+
+- `standalone_remote_volume.py`: a standalone volume controller - like
+  `rotary_encoder.py` but without redis so meant to be used without any of the
+  other programs above.
 
 
 Q/Why not a single program: it's much easier to have several pieces of
