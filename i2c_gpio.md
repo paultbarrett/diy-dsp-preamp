@@ -13,20 +13,6 @@ gpioinfo gpiochip0
 
 permissions: `/etc/udev/rules.d/99-gpiochip.rules`
 
-
-## GPIO - /sys/class/gpio/ (old - deprecated)
-
-To use gpios as non-root, create a `gpio` group and add
-[99-gpio.rules](https://github.com/NVIDIA/jetson-gpio/raw/master/lib/python/Jetson/GPIO/99-gpio.rules)
-to `/etc/udev/rules.d`
-
-```
-groupadd gpio
-curl -L -o /etc/udev/rules.d/99-gpio.rules "https://github.com/NVIDIA/jetson-gpio/raw/master/lib/python/Jetson/GPIO/99-gpio.rules"
-```
-
-Header pins are in GPIO mode by default, so no need to change anything.
-
 ## I2C
 
 I2C/SPI/UART/... need to be enabled via overlays:
