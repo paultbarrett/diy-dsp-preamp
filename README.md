@@ -62,9 +62,9 @@ notes will help someone - as some things initially looked difficult but ended up
 taking only a bit of time, while other things looked easy but took a lot of time
 to implement/debug.
 
-Some pics:
+Pic:
 
-![zoom](img/setup_1.jpg) ![whole](img/setup_2.jpg)
+![zoom](img/setup_1.jpg)
 
 Please note that I don't have much time nowadays - I'd be happy to help when
 possible (post an issue) but please don't take it personally if I don't reply
