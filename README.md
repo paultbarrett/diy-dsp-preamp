@@ -29,6 +29,7 @@ Table of content:
   encoder,
   etc.](#python-scripts-that-handle-the-display-buttons-rotary-encoder-etc.)
 - [Bluetooth streamer](#bluetooth-streamer)
+- [Licenses](#licenses)
 
 
 ## Why
@@ -463,3 +464,11 @@ See [this doc](pymedia.md)
 ## Bluetooth streamer
 
 See [this doc](pipewire_bluetooth.md)
+
+## Licenses
+
+Except stated otherwise, content is GPLv2.
+
+- LMSquery: MIT
+- `DejaVuSansMono.ttf`: Bitstream Vera license
+
