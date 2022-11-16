@@ -104,7 +104,7 @@ class RedisHelper():
                     f"wait_set=True and {self.pubsub_name}:last_alive isn't",
                     f" set to {time_now} after {wait_set_tries} tries")
 
-    def check_alive(self, pubsub_name, max_age=10):
+    def check_alive(self, pubsub_name, max_age=20):
         """Check if a 'last_alive' key was set less than max_age sec. ago."""
         last_alive = self.get_s(f"{pubsub_name}:last_alive")
 
