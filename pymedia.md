@@ -80,23 +80,41 @@ useradd -m -G gpio,i2c io	# or usermod -aG gpio,i2c io
 
 ### Redis
 
+Installation:
+
 ```
 apt install redis python3-redis
 systemctl enable redis-server
 ```
 
 `/etc/redis/redis.conf` tweaks:
+
 - don't save state (to avoid SD writes): `save ""`
 - max mem: `maxmemory 20000000`
 
-`/var/log` is tmpfs mounted in my case, so `/var/log/redis` needs to be created
-as startup:
+Create `/var/log/redis` after boot (as `/var/log` is tmpfs mounted in my case):
 
 `/etc/tmpfiles.d/redis.conf`:
 
 ```
 d       /var/log/redis  0700    redis   redis - -
 ```
+
+Fix `TimeoutStartSec` and `TimeoutStopSec` warning (+ seemingly related error):
+
+`TimeoutStartSec` and `TimeoutStopSec` aren't specified in the default systemd
+service file, despite this warning in the log:
+
+```
+"WARNING supervised by systemd - you MUST set appropriate values for
+TimeoutStartSec and TimeoutStopSec in your service unit."
+```
+
+This also seems to be the cause for `bind: Address already in use` errors when
+starting.
+
+-> add those fields (see `/etc/systemd/system/redis.service.d/timeouts.conf`)
+
 
 ### LMSQuery (for lms.py)
 
