@@ -101,6 +101,8 @@ Known BT sinks should be listed in `/home/pwbt/bt_sinks.def` like so:
 [...]
 ```
 
+note: `speaker-agent.py` and `monitor_bt.py` could be merged in a single program
+(no time to do that - one uses python-dbus, the other python-pydbus).
 
 
 relevant user files:
