@@ -4,7 +4,7 @@ After=pipewire.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /home/pwbt/bin/monitor_bt.py
+ExecStart=/usr/bin/python3 /home/pwbt/bin/monitor_bt.py /home/pwbt/bt_sinks.def
 
 [Install]
 WantedBy=default.target

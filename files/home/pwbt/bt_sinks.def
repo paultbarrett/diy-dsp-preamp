@@ -1,0 +1,4 @@
+# list known devices that would start bt-presence.target
+# (see ~/bin/monitor_bt.py)
+
+/org/bluez/hci0/dev_98_8E_79_00_5A_D3
