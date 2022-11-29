@@ -1,12 +1,19 @@
-# Bluetooth A2DP sink
+# Bluetooth receiver and streamer
 
-Overview:
+Receiver overview:
+- BT controller is always pairable and discoverable
+- BT sources are played to `Loopback2`
+
+Streamer overview:
+
 - (once:) manually pair the BT device with `bluetoothctl`
 - wireplumber sets up the A2DP sink automatically when the BT device is detected
 - a python user script monitoring dbus bluez events starts/stops stuff (eg.
   squeezelite) when the BT device is connected/disconnected
 
-## BT dongle firmware
+## Installation
+
+### BT dongle firmware:
 
 UB500 firmware, if dmesg shows
 `hci0: RTL: firmware file rtl_bt/rtl8761bu_fw.bin not found`:
@@ -18,11 +25,26 @@ http://ftp.us.debian.org/debian/pool/non-free/f/firmware-nonfree/firmware-realte
 dpkg -i firmware-realtek_20210818-1_all.deb
 ```
 
-## bluez
+### Bluez and pipewire
 
-`apt install bluez bluez-tools`
+bluez: `apt install bluez bluez-tools`
+
+[install](pipewire_debian_testing.md) more recent versions of pipewire and
+wireplumber.
+
+```
+apt -t testing install libldacbt-abr2 libspa-0.2-bluetooth \
+    pipewire-audio-client-libraries python3-pydbus
+useradd -m pwbt
+usermod -G audio pwbt
+loginctl enable-linger pwbt
+```
+
+### Streamer / pairing
 
 [doc](https://www.makeuseof.com/manage-bluetooth-linux-with-bluetoothctl/)
+
+Done once:
 
 ```
 bluetoothctl scan on
@@ -35,40 +57,32 @@ bluetoothctl paired-devices
 ```
 
 Note:
-- a running agent *is* needed
+
+- a running agent *is* needed when trying to pair the BT device with the
+  controller
 - sometimes a reboot will fix BT connection errors
 - use `btmon` to debug
-- 5K: pairing is obviously done in Qudelix pairing mode, but it seems that the first time 'connect' should also happen when in pairing mode ?
-- see https://forum.qudelix.com/post/having-trouble-getting-multipoint-pairing-between-my-ipad-pro-and-my-iphone-12-max-12380165
+- 5K: pairing is obviously done in Qudelix pairing mode, but it seems that the
+  first time 'connect' should also happen when in pairing mode ?
+- multipoint pairing: see [this forum
+  post](https://forum.qudelix.com/post/having-trouble-getting-multipoint-pairing-between-my-ipad-pro-and-my-iphone-12-max-12380165)
 
 
-# pipewire + wireplumber for BT devices
+### Pipewire (streamer and receiver)
 
-[install](pipewire_debian_testing.md) more recent versions of pipewire and
-wireplumber.
+`speaker-agent.py`: used both as agent an for BT receiver. Download 
+[here](https://github.com/fdanis-oss/pw_wp_bluetooth_rpi_speaker)
 
-```
-apt -t testing install libldacbt-abr2 libspa-0.2-bluetooth pipewire-audio-client-libraries python3-pydbus
-useradd -m pwbt
-usermod -G audio pwbt
-loginctl enable-linger pwbt
-```
-
-system files:
-
-```
-/etc/systemd/system/bt-agent.service
-```
-
-`monitor_bt.py` (started from `monitor-bt.service`) monitors the presence of the
-BT sink and starts/stops the `bt-presence.target` accordingly. The target pulls
-for instance squeezelite and an alsa loopback (with `arecord|aplay`) to play
-content from jacktrip (if any).
+`monitor_bt.py` (started from `monitor-bt.service`): monitors the presence of
+the BT sink and starts/stops the `bt-presence.target` accordingly. The target
+pulls for instance squeezelite and an alsa loopback (with `arecord|aplay`) to
+play content from jacktrip (if any).
 
 relevant user files:
 
 ```
-/home/pwbt/bin/monitor_bt.py	# requires python3-pydbus
+/home/pwbt/bin/monitor_bt.py
+/home/pwbt/bin/speaker-agent.py
 /home/pwbt/.config/systemd/user/monitor-bt.service
 /home/pwbt/.config/systemd/user/bt-presence.target
 # the services below are part of bt-presence.target:
@@ -76,7 +90,7 @@ relevant user files:
 /home/pwbt/.config/systemd/user/alsa-loop-loopback1.service
 ```
 
-Enable systemd user stuff:
+Enable systemd service (as user):
 
 ```
 systemctl --user enable monitor-bt.service
@@ -87,23 +101,27 @@ systemctl --user enable alsa-loop-loopback1.service
 user files to properly configure pipewire/wireplumber:
 
 ```
-/home/pwbt/.config/wireplumber/bluetooth.lua.d/80-disable-logind.lua
-/home/pwbt/.config/wireplumber/bluetooth.lua.d/80-ldac-hq.lua
-/home/pwbt/.config/wireplumber/main.lua.d/80-disable-alsa-monitor.lua
-/home/pwbt/.config/wireplumber/main.lua.d/90-enable-all.lua
+.config/pipewire/pipewire.conf
+.config/wireplumber/bluetooth.lua.d/80-disable-logind.lua
+.config/wireplumber/bluetooth.lua.d/80-ldac-hq.lua
+.config/wireplumber/bluetooth.lua.d/80-route_sources_to_alsa.lua
+.config/wireplumber/main.lua.d/80-disable-alsa-monitor.lua
+.config/wireplumber/main.lua.d/80-no_persistence.lua
+.config/wireplumber/main.lua.d/90-enable-all.lua
+.config/wireplumber/policy.lua.d/80-no_persistence.lua
 ```
 
 Main pipewire/wireplumber tweaks:
 
 - misc fixes because we're headless, no RT, ...
 - no alsa monitor/dynamic creation (players should play only to the A2DP sink)
+- BT sources are routed to `Loopback2`. Apps play to recent BT sinks by default
+  (TODO - force it with a wireplumber rule)
 
 Misc. notes:
 
-- the BT agent could be started by the `monitor_bt.py` script.
 - the `arecord|aplay` loopback started by `alsa-loop-loopback1.service` could
-  probably be replaced by a pipewire loopback but no luck trying to make it
-  work.
+  be replaced by a pipewire loopback but no luck trying to make it work.
 
 
 # misc
