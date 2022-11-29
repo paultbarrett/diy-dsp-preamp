@@ -1,0 +1,11 @@
+[Unit]
+Description=Bluetooth speaker agent
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+ExecStart=/usr/bin/python3 /home/pwbt/bin/speaker-agent.py
+
+[Install]
+WantedBy=default.target
