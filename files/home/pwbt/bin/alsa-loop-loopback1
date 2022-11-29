@@ -1,0 +1,37 @@
+#!/bin/sh
+
+PLAYBACK_DEV="pipewire"
+# keep those in sync with user pw's pipewire/jacktrip configuration
+CARD_NAME="Loopback1"
+CAPTURE_DEV="hw:CARD=${CARD_NAME},DEV=1"
+CAPTURE_SAMPLERATE=24000
+CAPTURE_FORMAT="FLOAT_LE"
+
+err() {
+	echo "$*" >&2
+	exit 1
+}
+
+CARD_INDEX=$(sed -ne "s/ \+\([0-9]\+\) .*${CARD_NAME}.*/\1/p" /proc/asound/cards)
+[ -z "$CARD_INDEX" ] && err "Could not find card index for card '$CARD_NAME'"
+
+SUBPCM_STATUS="/proc/asound/card${CARD_INDEX}/pcm0p/sub0/status"
+[ ! -e "$SUBPCM_STATUS" ] && err "No such file: $SUBPCM_STATUS"
+
+ALSALOOP_PID=
+while /bin/true; do 
+	if grep -q "state.*RUNNING" "$SUBPCM_STATUS"; then
+		if [ -z "$ALSALOOP_PID" ]; then
+			echo "pcm is running: starting audio pipe"
+			arecord -f "$CAPTURE_FORMAT" -r "$CAPTURE_SAMPLERATE" \
+				-c2 -D "$CAPTURE_DEV" | aplay -D "$PLAYBACK_DEV" &
+			ALSALOOP_PID=$!
+		fi
+	else
+		[ -n "$ALSALOOP_PID" ] && \
+			echo "pcm isn't running: killing audio pipe" && \
+			kill $ALSALOOP_PID && \
+			ALSALOOP_PID=
+	fi
+	sleep 2
+done
