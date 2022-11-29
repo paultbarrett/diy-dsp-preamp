@@ -56,6 +56,12 @@ bluetoothctl pairable on                # test
 bluetoothctl paired-devices
 ```
 
+and add a line to `/home/pwbt/bt_sinks.def` like so:
+
+```
+/org/bluez/hci0/dev_98_8E_79_00_5A_D3
+```
+
 Note:
 
 - a running agent *is* needed when trying to pair the BT device with the
@@ -88,6 +94,14 @@ Also see `speaker-agent.py` below.
 the BT sink and starts/stops the `bt-presence.target` accordingly. The target
 pulls for instance squeezelite and an alsa loopback (with `arecord|aplay`) to
 play content from jacktrip (if any).
+Known BT sinks should be listed in `/home/pwbt/bt_sinks.def` like so:
+
+```
+/org/bluez/hci0/dev_98_8E_79_00_5A_D3
+[...]
+```
+
+
 
 relevant user files:
 
