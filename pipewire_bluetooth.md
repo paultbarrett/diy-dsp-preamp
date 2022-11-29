@@ -40,7 +40,7 @@ usermod -G audio pwbt
 loginctl enable-linger pwbt
 ```
 
-### Streamer / pairing
+### BT Streamer / pairing
 
 [doc](https://www.makeuseof.com/manage-bluetooth-linux-with-bluetoothctl/)
 
@@ -66,6 +66,17 @@ Note:
   first time 'connect' should also happen when in pairing mode ?
 - multipoint pairing: see [this forum
   post](https://forum.qudelix.com/post/having-trouble-getting-multipoint-pairing-between-my-ipad-pro-and-my-iphone-12-max-12380165)
+
+
+### BT Receiver / pairing
+
+Configure the BlueZ daemon to allow re-pairing without user interaction:
+
+```
+$ sudo sed -i 's/#JustWorksRepairing.*/JustWorksRepairing = always/' /etc/bluetooth/main.conf
+```
+
+Also see `speaker-agent.py` below.
 
 
 ### Pipewire (streamer and receiver)
