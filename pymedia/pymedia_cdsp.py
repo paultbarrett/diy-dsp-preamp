@@ -27,11 +27,15 @@ class CDsp():
         # the following are optional
         'update_interval': 4,
         'config_path': os.environ.get('HOME') + "/camilladsp/configs",
+        'config_mute_on_change': True,
         'configs': (
-                    "M4_streamer_loop0.yml",
-                    "M4_streamer_loop1.yml",
-                    ),
-        'configs_control_player': ( True, False ),
+                "M4_streamer_loop0.yml",
+                "M4_streamer_loop1.yml",
+                ),
+        'configs_control_player': (
+                True,
+                False,
+                ),
         }
     """
 
@@ -259,9 +263,10 @@ class CDsp():
         else:
             self._log.info("Reading and validating config file '%s'",
                           config_path)
-            # mute now for immediate user feedback as read/validates
-            # takes a bit of time
-            self.mute(mode="mute")
+            if self._cfg.get('config_mute_on_change'):
+                # mute now for immediate user feedback as read/validates
+                # takes a bit of time
+                self.mute(mode="mute")
 
             try:
                 config = self._cdsp.read_config_file(config_path)

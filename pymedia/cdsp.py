@@ -20,6 +20,7 @@ CDSP_CFG = {
         'volume_max': -12,
         'volume_step': 1,
         'config_path': os.environ.get('HOME') + "/camilladsp/configs",
+        'config_mute_on_change': True,
         'configs': (
             "M4_streamer_loop0.yml",
             "M4_streamer_loop1.yml",
