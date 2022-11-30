@@ -1,6 +1,7 @@
 # Bluetooth receiver and streamer
 
 Receiver overview:
+
 - BT controller is always pairable and discoverable
 - BT sources are played to `Loopback2`
 
@@ -87,7 +88,8 @@ Also see `speaker-agent.py` below.
 
 ### Pipewire (streamer and receiver)
 
-`speaker-agent.py`: used both as agent an for BT receiver. Download 
+`speaker-agent.py`: used both as agent and to allow audio BT devices for the
+receiver. Download
 [here](https://github.com/fdanis-oss/pw_wp_bluetooth_rpi_speaker)
 
 `monitor_bt.py` (started from `monitor-bt.service`): monitors the presence of
@@ -121,6 +123,7 @@ Enable systemd service (as user):
 
 ```
 systemctl --user enable monitor-bt.service
+systemctl --user enable bt-agent.service
 systemctl --user enable squeezelite.service
 systemctl --user enable alsa-loop-loopback1.service
 ```
@@ -141,7 +144,7 @@ user files to properly configure pipewire/wireplumber:
 Main pipewire/wireplumber tweaks:
 
 - misc fixes because we're headless, no RT, ...
-- no alsa monitor/dynamic creation (players should play only to the A2DP sink)
+- no alsa monitor/dynamic creation (players should play only to BT A2DP sinks)
 - BT sources are routed to `Loopback2`. Apps play to recent BT sinks by default
   (TODO - force it with a wireplumber rule)
 
