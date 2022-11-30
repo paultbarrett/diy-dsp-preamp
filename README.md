@@ -16,19 +16,21 @@ works. Or, maybe someone will replicate the whole thing :)
 Table of content:
 
 - [Why](#why)
-- [Components / features:](#components-features)
+- [Components / features:](#components--features)
 - [Installation / Setup](#installation--setup)
   - [Overview](#overview)
   - [Alsa setup](#alsa-setup)
   - [CamillaDSP setup](#camilladsp-setup)
-  - [Config 0: LMS/squeezelite](#config-0-lmssqueezelite)
-  - [Config 1: pipewire/jacktrip](#config-1-pipewirejacktrip)
+  - [Configurations](#configurations)
+    - [Config 0: LMS/squeezelite](#config-0-lmssqueezelite)
+    - [Config 1: pipewire/jacktrip](#config-1-pipewirejacktrip)
+    - [Config 2: pipewire/bluetooth](#config-2-pipewirebluetooth)
 - [Camilla DSP GUI setup (optional)](#camilla-dsp-gui-setup-optional)
 - [My CamillaDSP setup](#my-camilladsp-setup)
 - [Python scripts that handle the display, buttons, rotary
   encoder,
   etc.](#python-scripts-that-handle-the-display-buttons-rotary-encoder-etc.)
-- [Bluetooth streamer](#bluetooth-streamer)
+- [Bluetooth streamer / receiver](#bluetooth-streamer--receiver)
 - [Licenses](#licenses)
 
 
@@ -156,37 +158,38 @@ plays back on the Motu M4
 - filters: high/low pass filters, EQ filters, dynamic volume, DC protection,
   etc.
 
-- config #0: squeezelite plays on alsa loopback #0 first two channels; LFE tone
-  on the 3rd channel (see below). CamillaDSP captures from alsa loopback 0's
-first 3 channels.
+- configurations: a player/audio source plays on an alsa loopback's first
+  two channels. An LFE tone plays intermittently on the 3rd channel to wake-up
+  the subwoofer / keep it powered on. CamillaDSP captures from alsa loopback's
+  cross-connected device.
 
-- config #1: jacktrip (through pipewire) plays on alsa loopback #1's first two
-  channels. LFE tone on the 3rd channel. CamillaDSP captures from alsa loopback
-  #1's first 3 channels. That config allows me to send audio from other devices
-  without messing with loopback #0.
+  - config #0: squeezelite player
 
-In both configs above: an inaudible low frequency tone plays at regular
-intervals on alsa loopback #0's 3rd channel to keep the subwoofer turned on
+  - config #1: jacktrip (through pipewire), for sending audio with low latency
+    from a remote device.
 
-- Bluetooth streamer with LDAC audio (standalone setup/config, independent from
-  CamillaDSP/M4/...). In my case, I'm streaming to a [Qudelix
-  5K](https://www.qudelix.com/products/qudelix-5k-dac-amp)  (headphone EQ is
-  done on the Qudelix but I'll probably try moving it to a dedicated CamillaDSP
-  instance to test more complex EQ and crossfeed configurations).
+  - config #2: Bluetooth sources (through pipewire).
+
+- Bluetooth streamer and receiver with LDAC audio (the streamer is a standalone
+  setup/config, independent from CamillaDSP/M4/...). In my case, I'm streaming
+  to a [Qudelix 5K](https://www.qudelix.com/products/qudelix-5k-dac-amp)
+  (headphone EQ is done on the Qudelix but I'll probably try moving it to a
+  dedicated CamillaDSP instance to test more complex EQ and crossfeed
+  configurations).
 
 
 ### Alsa setup
 
-Two alsa loop devices are used (see note #2 in [Config 1:
-pipewire/jacktrip](#config-1-pipewirejacktrip)).
+Several alsa loop devices are used (see notes at the end of this section).
 
 As root:
 
 ```
 echo "snd-aloop.conf" > /etc/modules-load.d/snd-aloop.conf
-# use two loopbacks - one for LMS/squeezelite, one for pipewire/jack
-echo "options snd-aloop index=0,1 enable=1,1 pcm_substreams=1,1 " \
-    "id=\"Loopback0\",\"Loopback1\" > /etc/modprobe.d/snd-aloop.conf
+# use three loopbacks
+echo "options snd-aloop index=0,1,2 enable=1,1,1 pcm_substreams=1,1,1 " \
+    "id=\"Loopback0\",\"Loopback1\",\"Loopback2\" \
+    > /etc/modprobe.d/snd-aloop.conf
 ```
 
 Since stereo content is played on the first two channels of alsa loopback and an
@@ -216,6 +219,11 @@ That means that the *order* in which applications are started is important so
 you can't rely on - say - one of the applications to adapt to the other one's
 parameters if you're not 100% sure that the 2nd app is always started after the
 1st. That's why it's less fragile to hardcode the parameters everywhere.
+
+Note - why several alsa loopback devices ? Given the above it's much less
+fragile than trying to cram everything into a single loopback device, especially
+when using different sample rates, having to make sure that only one app
+accesses the device (because we use `hw`), etc.
 
 
 ### CamillaDSP setup
@@ -262,16 +270,24 @@ Configuration files are in `/home/io/camilladsp/configs/` (see [My CamillaDSP
 Setup](#my-camilladsp-setup) for more info).
 
 
-### Config 0: LMS/squeezelite
+### Configurations
 
-- [squeezelite](squeezelite.md) plays on `pcm.Loopback0_0_c01` (alsa loopback
-  0,0 first two channels - as defined in `/etc/asound.conf`)
+The configurations have the following in common:
+
+- an app (`squeezelite`, `pipewire`, ...) plays on `pcm.LoopbackX_0_c01` (alsa
+  Xth loopback, device 0, first two channels - as defined in
+  `/etc/asound.conf`).
 
 - [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
-  `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
+  `pcm.LoopbackX_0_c2` to wake-up the subwoofer / prevent it from going into
   standby.
 
-- CamillaDSP capturing from alsa loopback 0,1
+- CamillaDSP captures from alsa loopback X, device 1.
+
+
+#### Config 0: LMS/squeezelite
+
+Playing application: `squeezelite`
 
 Obviously something other than squeezelite could be used - it's pretty easy to
 adapt the setup below to any other player.
@@ -315,18 +331,11 @@ Relevant files:
 ```
 
 
-### Config 1: pipewire/jacktrip
+#### Config 1: pipewire/jacktrip
 
-- `jacktrip` (through pipewire's jack server) plays on `pcm.Loopback1_0_c01`
-  (alsa loopback 0,0 first two channels - as defined in `/etc/asound.conf`) with
-  a 24000 Hz sampling rate (to decrease bandwidth requirements because jacktrip
-  doesn't have compression and my wi-fi isn't great).
-
-- [`lfe_tone.py`](pymedia.md) plays an intermittent low frequency tone on
-  `pcm.Loopback0_0_c2` to wake-up the subwoofer / prevent it from going into
-  standby.
-
-- CamillaDSP captures from alsa loopback 1,1
+Playing application: `jacktrip` (through `pipewire`'s jack server), with a 24000
+Hz sampling rate (to decrease bandwidth requirements because jacktrip doesn't
+have compression and my wi-fi isn't great).
 
 Note #1 - why jacktrip: because that's the only option that worked for me:
 jack's netJACK1 ("netone") doesn't work because the "server" is actually the
@@ -337,14 +346,9 @@ too much latency (and tcp over tcp is a bad idea anyway). A RTP sink may have
 worked but debian didn't package them for pipewire and I didn't feel like going
 into compiling custom packages. So - jacktrip it is.
 
-Note #2 - why two alsa loopback devices: because it's much easier, given
-squeezelite and jacktrip's different sample rates (44100Hz vs. 24000Hz), the
-requirement of matching exactly alsa's parameters, making sure that only one app
-plays back, etc.
-
-I chose to use a different user for pipewire/jacktrip - the idea was to avoid
-messing up my working setup with squeezelite, but you could setup everything as
-user `io` instead.
+Note #2 - I chose to use a different user for pipewire/jacktrip - the idea was
+to avoid messing up my working setup with squeezelite, but you could setup
+everything as user `io` instead.
 
 ```
 useradd -m pw
@@ -373,6 +377,17 @@ Main tweaks:
 - `jacktrip` is started through the `pw-jack` wrapper
 
 See [those instructions](jacktrip_client.md) to use jacktrip on the client(s).
+
+
+#### Config 2: pipewire/bluetooth
+
+Playing application: `pipewire` (sends sounds from BT sources).
+
+See [this doc](pipewire_bluetooth.md)
+
+Note - I use a different user for pipewire/bluetooth to avoid messing up my
+working setup with squeezelite, but you could probably setup everything as user
+`io` instead.
 
 
 ## Camilla DSP GUI setup (optional)
@@ -461,7 +476,7 @@ Notes:
 See [this doc](pymedia.md)
 
 
-## Bluetooth streamer
+## Bluetooth streamer / receiver
 
 See [this doc](pipewire_bluetooth.md)
 
