@@ -42,11 +42,11 @@ def manage_status_led(o_pin):
             o_pin.set_value(1)
             sleep(10)
         else:
-            for _ in range(0,4):
+            for _ in range(2):
                 o_pin.set_value(1)
                 sleep(0.2)
                 o_pin.set_value(0)
-                sleep(2)
+                sleep(4)
 
 
 # ----------------
