@@ -111,20 +111,23 @@ class Display():
         # \u25CC: off: '◌'
         # \u25B7: play '▷'
         # \u25A1: stop '□'
-        status = " " if player_is_stale else (
+        player_status = " " if player_is_stale else (
                 '\u25CC' if not self._redis.get_s("PLAYER:power") else (
                     '\u25B7' if self._redis.get_s("PLAYER:isplaying") else (
                     '\u25A1')))
 
         # https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
         draw.text(
-            (DISPLAY_X_OFFSET, 16 - DISPLAY_LINE_SPACING), status,
+            (DISPLAY_X_OFFSET, 16 - DISPLAY_LINE_SPACING), player_status,
             font=self._font_symbols, fill=DISPLAY_FG_COLOR, spacing=0,
             anchor='lb')
 
         # draw config index and rms/peak levels
-        text = "{}  {:02d}/{:02d}".format(
+        config_status = ( '-' if self._redis.get_s("CDSP:switching_config")
+                         else ' ' )
+        text = "{}{} {:02d}/{:02d}".format(
                 chr(65 + config_index),    # 0->'A', 1->'B', ...
+                config_status,
                 max_playback_signal_rms if max_playback_signal_rms > -99
                     else -99,
                 max_playback_signal_peak if max_playback_signal_peak > -99

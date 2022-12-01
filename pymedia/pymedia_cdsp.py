@@ -44,6 +44,7 @@ class CDsp():
         self._cfg = cfg
         self._redis = _redis
         self._setting_volume = False
+        self._switching_config = False
         self._cdsp = None
         self._config_index = 0
         self._stats = {}
@@ -242,7 +243,7 @@ class CDsp():
         # avoid setting volume concurrently (possible as this task is run as
         # a thread)
         while self._setting_volume:
-            self._log.debug("A volume change task is already set - wait")
+            self._log.debug("A volume change task is already running - wait")
             time.sleep(0.5)
         self._setting_volume = True
         self._cdsp_wp("set_volume", vol)
@@ -254,6 +255,15 @@ class CDsp():
         if not self._cfg.get('configs'):
             self._log.error("Trying to load next config but not config defined")
             return
+
+        # avoid switching config concurrently (possible as this task is run as
+        # a thread)
+        while self._switching_config:
+            self._log.info("A 'next config' task is already running - wait")
+            time.sleep(0.5)
+
+        self._switching_config = True
+
         index = (self._config_index + 1 ) % len(self._cfg['configs'])
         config_path = (self._cfg.get('config_path') +
                        "/" + self._cfg['configs'][index])
@@ -263,9 +273,13 @@ class CDsp():
         else:
             self._log.info("Reading and validating config file '%s'",
                           config_path)
+
+            # immediate user feedback as read/validates takes a bit of time
+            self._switching_config = True
+            self._redis.set_s("CDSP:switching_config", True)
+            self._redis.publish_event("next_config")
+
             if self._cfg.get('config_mute_on_change'):
-                # mute now for immediate user feedback as read/validates
-                # takes a bit of time
                 self.mute(mode="mute")
 
             try:
@@ -281,8 +295,9 @@ class CDsp():
                 self._log.info("Current config is index %d, path '%s'",
                               index, cur_config_path)
                 self._config_index = index
-                self.update()
 
+        self._switching_config = False
+        self.update()
 
     def _cdsp_wp(self, func_name, *args, **kwargs):
         """Wrapper function to CamillaDSP functions.
@@ -357,6 +372,7 @@ class CDsp():
                         int(max(self._cdsp_wp("get_playback_signal_peak"))))
                 self._stats['is_on'] = is_on
                 self._stats['mute'] = self._cdsp_wp("get_mute")
+                self._stats['switching_config'] = self._switching_config
 
                 # update redis and send 'change' action - if any
                 if prev_stats != self._stats:
