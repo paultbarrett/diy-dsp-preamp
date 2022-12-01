@@ -26,6 +26,7 @@ from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 # play with the right rate/format; a potential issue is that aplay could open
 # the device with different sample rate/format/channels params if camilladsp
 # isn't running yet.
+# 'plug' also fixes IPC permission issues if they aren't set properly
 # Note: CPU usage is the same when using hw: or plug: device, despite alsa
 # re-sampling stuff.
 #
@@ -44,12 +45,15 @@ LFE_TONE_DEFS = [
         {
             'file' : (os.environ.get('HOME')
                       + "/sounds/tone_mono_6Hz_10s_24000_float32.wav"),
-            # use plug: plugin to avoid IPC permission issues - camilladsp and
-            # pipewire run as different users but setting ipc_perm in
-            # asound.conf doesn't fix the issue; while using plug: magically
-            # works.
             'device' : "Loopback1_0_c2",
             },
+        # confix index 2
+        {
+            'file' : (os.environ.get('HOME')
+                      + "/sounds/tone_mono_6Hz_10s_44100_signed16.wav"),
+            'device' : "Loopback2_0_c2",
+            },
+
         ]
 
 # how often the tone should be played (in seconds) when conditions are met
