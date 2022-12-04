@@ -21,8 +21,8 @@ ALSA_PCM_NAME = "Master"        # find out with alsamixer -c ...
 ALSA_MIN_VOL = -50
 ALSA_MAX_VOL = 100
 
-VOL_CHANGE_DISCARD_TIME_WINDOW = 0.1
-VOL_CHANGE_MAX_AGE = 0.15
+VOL_CHANGE_DISCARD_TIME_WINDOW = 1
+VOL_CHANGE_MAX_AGE = 0.8
 
 # ---------------------
 
@@ -30,11 +30,12 @@ def get_volume(mixer_element, buffer_event):
     """Get volume from the alsa mixer, buffer/discard events."""
     vol_perc = ((mixer_element.get_volume() - ALSA_MIN_VOL)
             / (ALSA_MAX_VOL - ALSA_MIN_VOL) * 100)
+    print(f"buffer event {vol_perc}")
     buffer_event.event(int(vol_perc))
 
 
 def cdsp_set_volume(vol, _direction, _incr, _redis):
-    """Set CamillaDSP and Player volume via redis action.
+    """Set CamillaDSP volume via redis action.
 
     _direction and _incr aren't used - those are passed by default by
     pymedia_buffer_event.ProcessEvent.event()
@@ -47,6 +48,7 @@ def cdsp_set_volume(vol, _direction, _incr, _redis):
     set of alsa mixer events and messing again with cdsp's volume.
     """
     if not _redis.get_s("CDSP:mute"):
+        print(f"set {vol}")
         _redis.send_action('CDSP', f"volume_perc:{vol}")
 
 # ---------------------
