@@ -33,13 +33,14 @@ def get_volume(mixer_element, buffer_event):
     buffer_event.event(int(vol_perc))
 
 
-def cdsp_set_volume(vol, _direction, _incr, _redis):
-    """Set CamillaDSP volume via redis action.
+def set_cdsp_player_volume(vol, _direction, _incr, _redis):
+    """Set CamillaDSP and Player volume via redis action.
 
     _direction and _incr aren't used - those are passed by default by
     pymedia_buffer_event.ProcessEvent.event().
     """
-    _redis.send_action('CDSP', f"set_volume_perc:{vol}")
+    _redis.send_action('CDSP', f"volume_perc:{vol}")
+    _redis.send_action('PLAYER', f"volume_perc:{vol}")
 
 # ---------------------
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'ALSA_VOL')
 
-    buffer_vol_event = pymedia_buffer_event.ProcessEvent(cdsp_set_volume,
+    buffer_vol_event = pymedia_buffer_event.ProcessEvent(set_cdsp_player_volume,
                                     VOL_CHANGE_DISCARD_TIME_WINDOW,
                                     VOL_CHANGE_MAX_AGE,
                                     cb_args=(redis,))
