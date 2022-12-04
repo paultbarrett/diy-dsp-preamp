@@ -16,9 +16,8 @@ if __name__ == '__main__':
     _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                        'DISPLAY')
 
-    display = pymedia_display.Display(_redis, [ "_draw_status_bar",
-                                               "_draw_wifi_relay_status" ])
-#                                               "_draw_cdsp_volume" ])
+    display = pymedia_display.Display(_redis)
+    display.draw_funcs = [ display.draw_status_bar, display.draw_cdsp_volume ]
 
     display.t_wait_events.start()
 

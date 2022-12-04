@@ -39,10 +39,9 @@ DISPLAY_TIMEOUT_AUTO_OFF = 0    # 0 to disable (seconds)
 
 class Display():
 
-    def __init__(self, _redis, draw_funcs):
+    def __init__(self, _redis):
         self._log = logging.getLogger(self.__class__.__name__)
         self._redis = _redis
-        self._draw_funcs = draw_funcs
         self._i2c = busio.I2C(board.SCL, board.SDA)
         # 128x16 Yellow | 128x48 Sky Blue
         self._disp = adafruit_ssd1306.SSD1306_I2C(
@@ -55,6 +54,7 @@ class Display():
         self._timeout_auto_off = DISPLAY_TIMEOUT_AUTO_OFF
         self._update_id = 0
         self._is_blank = False
+        self.draw_funcs = []
 
         self.t_wait_events = threading.Thread(target = self.wait_events)
         self.t_wait_events.daemon = True
@@ -83,7 +83,7 @@ class Display():
             self._is_blank = True
 
     # https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
-    def _draw_status_bar(self, draw):
+    def draw_status_bar(self, draw):
         """Draw the banner (upper display part).
 
         Banner: player status | config index | signal RMS | signal peak
@@ -133,7 +133,7 @@ class Display():
             text, font=self._font_small, fill=DISPLAY_FG_COLOR, spacing=0,
             anchor='rb')
 
-    def _draw_cdsp_volume(self, draw):
+    def draw_cdsp_volume(self, draw):
         """Draw the cdsp volume and mute status (main display area)."""
 
         vol = self._redis.get_s("CDSP:volume")
@@ -166,8 +166,8 @@ class Display():
     def _draw_wifi_relay_status(self, draw):
         """Draw wifi and relay status (main display area)."""
 
-        wifi_status = "W" if self._redis.get_s("WIFI:state") else " "
-        relay_status = "R" if self._redis.get_s("RELAY:state") else " "
+        wifi_status = "W" if self._redis.get_s("WIFI:state") else "_"
+        relay_status = "R" if self._redis.get_s("RELAY:state") else "_"
 
         draw.text(
             (self._disp.width - DISPLAY_X_OFFSET, self._disp.height -
@@ -213,8 +213,7 @@ class Display():
             return
 
         # draw
-        for func_name in self._draw_funcs:
-            func = getattr(self, str(func_name))
+        for func in self.draw_funcs:
             func(draw)
 
         # stop if another thread took over
