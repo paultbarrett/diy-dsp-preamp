@@ -6,6 +6,7 @@
 
 import gpiod
 
+import pymedia_buffer_event
 import pymedia_redis
 import pymedia_rotary_encoder
 
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     REDIS = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'ROTARY_ENCODER')
 
-    vol_event = pymedia_rotary_encoder.ProcessEvent(cdsp_set_volume,
+    vol_event = pymedia_buffer_event.ProcessEvent(cdsp_set_volume,
                                       ROTARY_ENCODER_DISCARD_TIME_WINDOW,
                                       ROTARY_ENCODER_MAX_AGE)
 
