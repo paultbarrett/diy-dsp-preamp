@@ -15,7 +15,7 @@ class ProcessEvent():
         self._last_event_value = None
         self._callback = callback
 
-    def event(self, value, direction):
+    def event(self, value, direction=0):
         """Process an event (like setting the volume).
 
         We're trying to avoid flooding the "receiver" (eg. camilladsp with

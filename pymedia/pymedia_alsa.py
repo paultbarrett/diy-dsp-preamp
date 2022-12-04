@@ -4,6 +4,7 @@
 
 import select
 import logging
+import threading
 from pyalsa import alsamixer
 
 # https://www.alsa-project.org/alsa-doc/alsa-lib/
@@ -14,7 +15,7 @@ from pyalsa import alsamixer
 # amixer -c1 sset "Master" 80
 # ...
 
-def poll(pcm, pcm_name, callback):
+def poll(pcm, pcm_name, callback, threaded_callback=False):
 
     mixer = alsamixer.Mixer()
     mixer.attach(pcm)
@@ -30,5 +31,10 @@ def poll(pcm, pcm_name, callback):
     while True:
         poller.poll()
         mixer.handle_events()
-        logging.debug("Poll OK")
-        callback(alsa)
+        logging.debug("Event")
+        if threaded_callback:
+            thread = threading.Thread(target=callback, args=(alsa,))
+            thread.daemon = True
+            thread.start()
+        else:
+            callback(alsa)
