@@ -68,21 +68,36 @@ class Lms():
             self._log.info("lms query isn't defined; player not running ?")
             return
 
-        func_action, func_action_args = {
-                "previous_song": [self._lmsquery.previous_song, ()],
-                "next_song": [self._lmsquery.next_song, ()],
-                "play": [self._lmsquery.query, ("button", "play")],
-                "stop": [self._lmsquery.query, ("button", "stop")],
-                "pause": [self._lmsquery.query, ("pause", 1)],
-                "unpause": [self._lmsquery.query, ("pause", 0)],
-                "toggle_pause": [self._lmsquery.query, ("pause",)],
-                "off": [self._lmsquery.query, ("power", 0)],
-                "on": [self._lmsquery.query, ("power", 1)],
-                "random_albums": [self._lmsquery.query, ("randomplay",
-                                                        "albums")],
-                "random_tracks": [self._lmsquery.query, ("randomplay",
-                                                        "tracks")]
-                }.get(action, [None, None])
+        if "volume_perc:" in action:
+            try:
+                vol_perc = int(action.split('volume_perc:')[1])
+            except ValueError as ex:
+                self._log.error(ex)
+                return
+
+            if not 0 <= vol_perc <= 100:
+                self._log.error("Volume is outside range: %d", vol_perc)
+                return
+
+            func_action = self._lmsquery.set_volume
+            func_action_args = (vol_perc,)
+
+        else:
+            func_action, func_action_args = {
+                    "previous_song": [self._lmsquery.previous_song, ()],
+                    "next_song": [self._lmsquery.next_song, ()],
+                    "play": [self._lmsquery.query, ("button", "play")],
+                    "stop": [self._lmsquery.query, ("button", "stop")],
+                    "pause": [self._lmsquery.query, ("pause", 1)],
+                    "unpause": [self._lmsquery.query, ("pause", 0)],
+                    "toggle_pause": [self._lmsquery.query, ("pause",)],
+                    "off": [self._lmsquery.query, ("power", 0)],
+                    "on": [self._lmsquery.query, ("power", 1)],
+                    "random_albums": [self._lmsquery.query, ("randomplay",
+                                                            "albums")],
+                    "random_tracks": [self._lmsquery.query, ("randomplay",
+                                                            "tracks")]
+                    }.get(action, [None, None])
 
         if not func_action:
             self._log.warning("action '%s' isn't defined", action)
