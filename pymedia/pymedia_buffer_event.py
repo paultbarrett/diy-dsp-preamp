@@ -6,7 +6,8 @@ import logging
 import time
 
 class ProcessEvent():
-    def __init__(self, callback, discard_time_window=0.1, max_age=0.15):
+    def __init__(self, callback, discard_time_window=0.1, max_age=0.15,
+                 cb_args=()):
         self._log = logging.getLogger(self.__class__.__name__)
         self._discard_time_window = discard_time_window
         self._max_age = max_age
@@ -14,6 +15,7 @@ class ProcessEvent():
         self._last_event_time = 0
         self._last_event_value = None
         self._callback = callback
+        self._callback_args = cb_args
 
     def event(self, value, direction=0):
         """Process an event (like setting the volume).
@@ -58,6 +60,6 @@ class ProcessEvent():
             else:
                 incr = direction
 
-            self._callback(value, direction, incr)
+            self._callback(value, direction, incr, *self._callback_args)
             self._last_event_value = value
             self._last_event_time = time.time()
