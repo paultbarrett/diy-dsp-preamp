@@ -137,15 +137,24 @@ class CDsp():
         if not self.is_on():
             return
 
-        if "volume:" in action:
+        if "volume_rel:" in action:
             try:
-                vol_incr = (int(action.split('volume:')[1]) *
+                vol_incr = (int(action.split('volume_rel:')[1]) *
                             self._cfg['volume_step'])
             except ValueError as ex:
                 self._log.error(ex)
                 return
             func_action = self.set_volume
             func_action_args = (self._cdsp_wp("get_volume") + vol_incr,)
+
+        elif "volume_abs:" in action:
+            try:
+                vol_abs = int(action.split('volume_abs:')[1])
+            except ValueError as ex:
+                self._log.error(ex)
+                return
+            func_action = self.set_volume
+            func_action_args = (vol_abs,)
 
         else:
             func_action, func_action_args = {

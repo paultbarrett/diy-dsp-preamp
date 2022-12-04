@@ -22,7 +22,7 @@ REDIS = None
 
 def cdsp_set_volume(_1, _2, incr):
     """Send (publish) volume up/down actions for CamillaDSP."""
-    REDIS.send_action('CDSP', f"set_volume:{incr}")
+    REDIS.send_action('CDSP', f"set_volume_rel:{incr}")
 
 
 # ----------------
