@@ -17,7 +17,8 @@ BUTTON_PRESSED_DISCARD_TIME_WINDOW = 0.6
 # ----------------
 
 def wait_input_pin(gpiochip, pin, callback, threaded_callback=False,
-                 timeout=BUTTON_PRESSED_DISCARD_TIME_WINDOW):
+                   timeout=BUTTON_PRESSED_DISCARD_TIME_WINDOW,
+                   cb_args=()):
     """Loop / run callback on pin change (interrupt based).
 
     Blocking - should be run in a thread.
@@ -50,11 +51,12 @@ def wait_input_pin(gpiochip, pin, callback, threaded_callback=False,
             logging.debug("running callback | thread: %s",
                             threaded_callback)
             if threaded_callback:
-                thread = threading.Thread(target=callback)
+                thread = threading.Thread(target=callback,
+                                          args=(*cb_args,))
                 thread.daemon = True
                 thread.start()
             else:
-                callback()
+                callback(*cb_args)
 
 
 class GpioOutputPin:

@@ -15,21 +15,17 @@ from pymedia_cdsp import redis_cdsp_ping
 
 from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
-# ---------------------
-
-REDIS = None
-
 # ----------------
 
-def next_source():
+def next_source(_redis):
     """Send (publish) a "next configuration action" for CamillaDSP."""
-    REDIS.send_action('CDSP', "next_config")
+    _redis.send_action('CDSP', "next_config")
 
-def mute():
+def mute(_redis):
     """Send (publish) a "toggle mute action" for CamillaDSP."""
-    REDIS.send_action('CDSP', "toggle_mute")
+    _redis.send_action('CDSP', "toggle_mute")
 
-def manage_status_led(o_pin):
+def manage_status_led(o_pin, _redis):
     """Provide visual feedback of CamillaDSP status.
 
     cdsp is on: led is on
@@ -38,7 +34,7 @@ def manage_status_led(o_pin):
     blocking function (should be run in a thread).
     """
     while True:
-        if redis_cdsp_ping(REDIS):
+        if redis_cdsp_ping(_redis):
             o_pin.set_value(1)
             sleep(10)
         else:
@@ -53,7 +49,7 @@ def manage_status_led(o_pin):
 
 if __name__ == '__main__':
 
-    REDIS = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+    redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'GPIOS')
 
     gpiochip0 = gpiod.Chip("gpiochip0")
@@ -65,14 +61,15 @@ if __name__ == '__main__':
     threads = pymedia_utils.SimpleThreads()
 
     # rear panel led
-    threads.add_target(manage_status_led, panel_led)
+    threads.add_target(manage_status_led, panel_led, redis)
 
     # front panel push button
     threads.add_target(pymedia_gpio.wait_input_pin, gpiochip1, 23,
-                       callback=next_source)
+                       callback=next_source, cb_args=(redis,))
 
     # rotary encoder push button
-    threads.add_target(pymedia_gpio.wait_input_pin, gpiochip2, 4, callback=mute)
+    threads.add_target(pymedia_gpio.wait_input_pin, gpiochip2, 4, callback=mute,
+                       cb_args=(redis,))
 
     threads.start()
 
