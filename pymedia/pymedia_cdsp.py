@@ -147,13 +147,18 @@ class CDsp():
             func_action = self.set_volume
             func_action_args = (self._cdsp_wp("get_volume") + vol_incr,)
 
-        elif "volume_abs:" in action:
+        elif "volume_perc:" in action:
             try:
-                vol_abs = int(action.split('volume_abs:')[1])
+                vol_perc = int(action.split('volume_perc:')[1])
             except ValueError as ex:
                 self._log.error(ex)
                 return
+            vol_abs = ( (self._cfg['volume_max'] - self._cfg['volume_min'])
+                    * vol_perc
+                    / 100
+                    + self._cfg['volume_min'] )
             func_action = self.set_volume
+            self._log.info(vol_abs)
             func_action_args = (vol_abs,)
 
         else:
