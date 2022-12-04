@@ -221,9 +221,6 @@ class CDsp():
             if not self._redis:
                 return
 
-            self._redis.set_s("CDSP:mute", False)
-            self._redis.publish_event("mute")
-
             # wake up subwoofer
             self._redis.send_action('LFE_TONE', "play_skip_tests")
 
@@ -235,6 +232,10 @@ class CDsp():
                     self._log.error("No configs_control_player index"
                                     "defined at index %d",
                                     self._config_index)
+
+            self._redis.set_s("CDSP:mute", False)
+            self._redis.publish_event("mute")
+
 
     def incr_volume(self, vol_incr):
         """Increment volume."""

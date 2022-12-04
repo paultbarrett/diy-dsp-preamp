@@ -33,14 +33,21 @@ def get_volume(mixer_element, buffer_event):
     buffer_event.event(int(vol_perc))
 
 
-def set_cdsp_player_volume(vol, _direction, _incr, _redis):
+def cdsp_set_volume(vol, _direction, _incr, _redis):
     """Set CamillaDSP and Player volume via redis action.
 
     _direction and _incr aren't used - those are passed by default by
-    pymedia_buffer_event.ProcessEvent.event().
+    pymedia_buffer_event.ProcessEvent.event()
+
+    only set CamillaDSP volume if CamillaDSP isn't muted to avoid "feedback
+    loop": when cdsp is muted the lms player is paused (see pymedia_cdsp);
+    however LMS and/or squeezelite set the mixer's volume to 0%, which trigger
+    alsa mixer events, setting cdsp volume to 0%. Then, on "un-mute",
+    LMS/squeezelite restores the mixer to its previous level, triggering another
+    set of alsa mixer events and messing again with cdsp's volume.
     """
-    _redis.send_action('CDSP', f"volume_perc:{vol}")
-    _redis.send_action('PLAYER', f"volume_perc:{vol}")
+    if not _redis.get_s("CDSP:mute"):
+        _redis.send_action('CDSP', f"volume_perc:{vol}")
 
 # ---------------------
 
@@ -69,7 +76,7 @@ if __name__ == '__main__':
     redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'ALSA_VOL')
 
-    buffer_vol_event = pymedia_buffer_event.ProcessEvent(set_cdsp_player_volume,
+    buffer_vol_event = pymedia_buffer_event.ProcessEvent(cdsp_set_volume,
                                     VOL_CHANGE_DISCARD_TIME_WINDOW,
                                     VOL_CHANGE_MAX_AGE,
                                     cb_args=(redis,))
