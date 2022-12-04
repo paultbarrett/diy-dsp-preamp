@@ -17,13 +17,11 @@ from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 ROTARY_ENCODER_DISCARD_TIME_WINDOW = 0.1
 ROTARY_ENCODER_MAX_AGE = 0.15
 
-REDIS = None
-
 # ----------------
 
-def cdsp_set_volume(_1, _2, incr):
+def cdsp_set_volume(_1, _2, incr, _redis):
     """Send (publish) volume up/down actions for CamillaDSP."""
-    REDIS.send_action('CDSP', f"set_volume_rel:{incr}")
+    _redis.send_action('CDSP', f"set_volume_rel:{incr}")
 
 
 # ----------------
@@ -32,12 +30,14 @@ if __name__ == '__main__':
 
     gpiochip0 = gpiod.Chip("gpiochip0")
 
-    REDIS = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+    redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'ROTARY_ENCODER')
 
     vol_event = pymedia_buffer_event.ProcessEvent(cdsp_set_volume,
                                       ROTARY_ENCODER_DISCARD_TIME_WINDOW,
-                                      ROTARY_ENCODER_MAX_AGE)
+                                      ROTARY_ENCODER_MAX_AGE,
+                                      cb_args=(redis,))
+
 
     r_enc = pymedia_rotary_encoder.RotaryEncoder(gpiochip0, 16, 15,
                                              callback=vol_event.event,
