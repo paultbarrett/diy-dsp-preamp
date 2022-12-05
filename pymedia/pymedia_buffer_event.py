@@ -7,7 +7,7 @@ import time
 
 class ProcessEvent():
     def __init__(self, callback, discard_time_window=0.1, max_age=0.15,
-                 ignore_first_event=False, cb_args=()):
+                 cb_args=()):
         self._log = logging.getLogger(self.__class__.__name__)
         self._discard_time_window = discard_time_window
         self._max_age = max_age
@@ -15,7 +15,6 @@ class ProcessEvent():
         self._last_event_time = 0
         self._last_event_value = None
         self._callback = callback
-        self._ignore_first_event = ignore_first_event
         self._callback_args = cb_args
 
     def event(self, value, direction=0):
@@ -32,10 +31,8 @@ class ProcessEvent():
 
         Note: blocking (time.sleep()) so should be executed as a thread
         """
-
         self._cur_event_id += 1
         event_id = self._cur_event_id
-
         run_callback = False
         if time.time() - self._last_event_time > self._max_age:
             self._log.debug("thread id # %s: last event time was more than"
@@ -63,9 +60,6 @@ class ProcessEvent():
             else:
                 incr = direction
 
-            if self._ignore_first_event and self._cur_event_id == 1:
-                self._log.debug("Ignoring first event")
-            else:
-                self._callback(value, direction, incr, *self._callback_args)
+            self._callback(value, direction, incr, *self._callback_args)
             self._last_event_value = value
             self._last_event_time = time.time()
