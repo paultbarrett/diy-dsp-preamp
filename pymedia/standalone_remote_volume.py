@@ -29,7 +29,7 @@ CDSP = None
 # ----------------
 
 def cdsp_set_volume(_1, _2, incr):
-    CDSP.incr_volume(incr)
+    CDSP.set_volume_incr(incr)
 
 # ----------------
 

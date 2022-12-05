@@ -237,11 +237,11 @@ class CDsp():
             self._redis.publish_event("mute")
 
 
-    def incr_volume(self, vol_incr):
+    def set_volume_incr(self, vol_incr):
         """Increment volume."""
         self.set_volume(self._cdsp_wp("get_volume") + vol_incr)
 
-    def set_volume(self, vol):
+    def _set_volume(self, vol):
         """Set volume."""
         if not (self._cfg['volume_min'] <= vol
                 <= self._cfg['volume_max']):
