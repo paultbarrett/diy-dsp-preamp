@@ -164,12 +164,6 @@ class CDsp():
         else:
             func_action, func_action_args = {
 
-                    "volume_inc": [ self.set_volume_incr,
-                        (self._cfg['volume_step'],) ],
-
-                    "volume_dec": [ self.set_volume_incr,
-                        (-self._cfg['volume_step'],) ],
-
                     "toggle_mute": [self.mute, ("toggle",)],
 
                     "mute": [self.mute, ("mute",)],
