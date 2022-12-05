@@ -25,26 +25,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 def cdsp_set_volume(vol, _redis):
     """Set CamillaDSP volume via redis action.
-
-    only set CamillaDSP volume if CamillaDSP isn't muted to avoid "feedback
-    loop": when cdsp is muted the lms player is paused (see pymedia_cdsp);
-    however LMS and/or squeezelite set the mixer's volume to 0%, which trigger
-    alsa mixer events, setting cdsp volume to 0%. Then, on "un-mute",
-    LMS/squeezelite restores the mixer to its previous level, triggering another
-    set of alsa mixer events and messing again with cdsp's volume.
     """
-    if not _redis.get_s("CDSP:mute"):
-        logging.info("Action - set CDSP volume to %s", vol)
-        _redis.send_action('CDSP', f"volume_perc:{vol}")
+    logging.info("Action - set CDSP volume to %s", vol)
+    _redis.send_action('CDSP', f"volume_perc:{vol}:NO_PLAYER_VOL_UPDATE")
 
 
 def receive_volume_event(_socket, player_id, callback, cb_args=()):
 
     # 13%3A89%3A0e%3Ac8%3A1d%3Aa5 mixer volume 50
-    regex = re.compile("^" + player_id + r" mixer volume (\d+)$")
+    regex = re.compile("^" + player_id + r" mixer volume ([+\-]?\d+)$")
 
     # subscribe to volume changes
-    _socket.send("subscribe mixer,pause\r".encode("UTF-8"))
+    _socket.send("subscribe mixer\r".encode("UTF-8"))
 
 
     while True:

@@ -139,11 +139,17 @@ class CDsp():
 
         if action.startswith("volume_incr:"):
             func_action = self.set_volume_incr
-            func_action_args = (action.split('volume_incr:')[1],)
+            func_action_args = (action.split(':')[1],)
 
         elif action.startswith("volume_perc:"):
             func_action = self.set_volume_percent
-            func_action_args = (action.split('volume_perc:')[1],)
+            player_vol_update = True
+            try:
+                if action.split(':')[2] == "NO_PLAYER_VOL_UPDATE":
+                    player_vol_update = False
+            except IndexError:
+                pass
+            func_action_args = (action.split(':')[1], player_vol_update)
 
         else:
             func_action, func_action_args = {
@@ -218,30 +224,36 @@ class CDsp():
             self._redis.set_s("CDSP:mute", False)
             self._redis.publish_event("mute")
 
+    def db_vol_to_perc_vol(self, vol_db):
+        """Convert CamillaDSP volume in dB to [0-100]."""
+        return ( 100 * (vol_db - self._cfg['volume_min'])
+                    / (self._cfg['volume_max'] - self._cfg['volume_min']))
 
-    def set_volume_incr(self, vol_incr):
+    def perc_vol_to_db_vol(self, vol_perc):
+        """Convert a [0-100] volume to CamillaDSP volume in dB."""
+        return ( (self._cfg['volume_max'] - self._cfg['volume_min'])
+                * vol_perc / 100
+                + self._cfg['volume_min'] )
+
+    def set_volume_incr(self, vol_incr, player_vol_update=True):
         """Increment volume."""
-        try:
-            vol_incr = int(vol_incr)
-        except ValueError as ex:
-            self._log.error(ex)
-        else:
-            self.set_volume_db(self._cdsp_wp("get_volume")
-                           + vol_incr * self._cfg['volume_step'])
+        self.set_volume_db(self._cdsp_wp("get_volume")
+                           + int(float(vol_incr) * self._cfg['volume_step']),
+                           player_vol_update)
 
-    def set_volume_percent(self, vol_perc):
-        """Set volume as a percentage of the volume range."""
-        try:
-            vol_perc = float(vol_perc)
-        except ValueError as ex:
-            self._log.error(ex)
+    def set_volume_percent(self, vol_perc, player_vol_update=True):
+        """Set or increment volume as a percentage of the volume range."""
+        if vol_perc.startswith('+') or vol_perc.startswith('-'):
+            vol_db_incr = float(vol_perc) / 100 * (self._cfg['volume_max'] -
+                                                   self._cfg['volume_min'])
+            self._log.info("bing %s | %s", vol_perc, vol_db_incr)
+            self.set_volume_incr(vol_db_incr, player_vol_update)
         else:
-            vol_db = ( (self._cfg['volume_max'] - self._cfg['volume_min'])
-                    * vol_perc / 100
-                    + self._cfg['volume_min'] )
-            self.set_volume_db(vol_db)
+            vol_db = self.perc_vol_to_db_vol(vol_perc)
+            self.set_volume_db(vol_db, player_vol_update)
 
-    def set_volume_db(self, vol):
+
+    def set_volume_db(self, vol, player_vol_update=True):
         """Set volume as a (CamillaDSP) dB value."""
         try:
             vol = float(vol)
@@ -274,12 +286,10 @@ class CDsp():
         self._setting_volume = False
 
         if self._redis:
-            vol_perc = ( 100 * (vol - self._cfg['volume_min'])
-                        / (self._cfg['volume_max'] - self._cfg['volume_min']))
+            vol_perc = self.db_vol_to_perc_vol(vol)
             self._redis.set_s("CDSP:volume", int(vol))
-            self._redis.set_s("CDSP:volume_percentage", vol_perc)
             # set/sync player volume
-            if self._cfg.get('configs_control_player'):
+            if player_vol_update and self._cfg.get('configs_control_player'):
                 try:
                     if self._cfg['configs_control_player'][self._config_index]:
                         self._redis.send_action('PLAYER',
