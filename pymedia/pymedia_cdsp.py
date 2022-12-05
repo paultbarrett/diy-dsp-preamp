@@ -226,13 +226,13 @@ class CDsp():
 
     def db_vol_to_perc_vol(self, vol_db):
         """Convert CamillaDSP volume in dB to [0-100]."""
-        return ( 100 * (vol_db - self._cfg['volume_min'])
+        return ( 100 * (float(vol_db) - self._cfg['volume_min'])
                     / (self._cfg['volume_max'] - self._cfg['volume_min']))
 
     def perc_vol_to_db_vol(self, vol_perc):
         """Convert a [0-100] volume to CamillaDSP volume in dB."""
         return ( (self._cfg['volume_max'] - self._cfg['volume_min'])
-                * vol_perc / 100
+                * float(vol_perc) / 100
                 + self._cfg['volume_min'] )
 
     def set_volume_incr(self, vol_incr, player_vol_update=True):
