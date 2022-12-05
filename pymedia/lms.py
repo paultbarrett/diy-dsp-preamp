@@ -70,7 +70,7 @@ class Lms():
 
         if "volume_perc:" in action:
             try:
-                vol_perc = int(action.split('volume_perc:')[1])
+                vol_perc = float(action.split('volume_perc:')[1])
             except ValueError as ex:
                 self._log.error(ex)
                 return

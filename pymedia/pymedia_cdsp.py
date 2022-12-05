@@ -232,7 +232,7 @@ class CDsp():
     def set_volume_percent(self, vol_perc):
         """Set volume as a percentage of the volume range."""
         try:
-            vol_perc = int(vol_perc)
+            vol_perc = float(vol_perc)
         except ValueError as ex:
             self._log.error(ex)
         else:
@@ -244,7 +244,7 @@ class CDsp():
     def set_volume_db(self, vol):
         """Set volume as a (CamillaDSP) dB value."""
         try:
-            vol = int(vol)
+            vol = float(vol)
         except ValueError as ex:
             self._log.error(ex)
             return
@@ -259,17 +259,36 @@ class CDsp():
                    )
 
         self._log.debug("Setting volume to '%s'", vol)
-        if self._redis:
-            self._redis.set_s("CDSP:volume", vol)
-            self._redis.publish_event("volume")
+
+        if int(self._cdsp_wp("get_volume")) == int(vol):
+            self._log.debug("Current volume already %s", int(vol))
+            return
+
         # avoid setting volume concurrently (possible as this task is run as
         # a thread)
         while self._setting_volume:
             self._log.debug("A volume change task is already running - wait")
             time.sleep(0.5)
         self._setting_volume = True
-        self._cdsp_wp("set_volume", vol)
+        self._cdsp_wp("set_volume", int(vol))
         self._setting_volume = False
+
+        if self._redis:
+            vol_perc = ( 100 * (vol - self._cfg['volume_min'])
+                        / (self._cfg['volume_max'] - self._cfg['volume_min']))
+            self._redis.set_s("CDSP:volume", int(vol))
+            self._redis.set_s("CDSP:volume_percentage", vol_perc)
+            # set/sync player volume
+            if self._cfg.get('configs_control_player'):
+                try:
+                    if self._cfg['configs_control_player'][self._config_index]:
+                        self._redis.send_action('PLAYER',
+                                                f"volume_perc:{vol_perc}")
+                except IndexError:
+                    self._log.error("No configs_control_player index"
+                                    "defined at index %d",
+                                    self._config_index)
+            self._redis.publish_event("volume")
 
     def load_next_config(self):
         """Load next config in _cfg['configs'][]."""
