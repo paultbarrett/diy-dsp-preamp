@@ -2,23 +2,21 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
 
 # LMS
 import requests
 import lmsquery
 
-import pymedia_utils
+from pymedia_utils import logging, Log, SimpleThreads
 from pymedia_cdsp import redis_cdsp_ping
 
 # ---------------------
 
 # https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md
 
-class Lms():
+class Lms(metaclass=Log):
     def __init__(self, server, playerid, _redis, update_interval=4):
-        self._log = logging.getLogger(self.__class__.__name__)
         self._server = server
         self._lmsquery = lmsquery.LMSQuery(server)
         self._playerid = playerid
@@ -30,7 +28,7 @@ class Lms():
                 'isplaying' : False,
                 'power' : False,
                 }
-        self.threads = pymedia_utils.SimpleThreads()
+        self.threads = SimpleThreads()
         self.threads.add_target(self.update_loop, update_interval)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
 
@@ -54,18 +52,18 @@ class Lms():
         published (sent) via redis.
         """
         if not self._lmsquery:
-            self._log.info("lms query isn't defined; player not running ?")
+            logging.info("lms query isn't defined; player not running ?")
             return
 
         if "volume_perc:" in action:
             try:
                 vol_perc = float(action.split('volume_perc:')[1])
             except ValueError as ex:
-                self._log.error(ex)
+                logging.error(ex)
                 return
 
             if not 0 <= vol_perc <= 100:
-                self._log.error("Volume is outside range: %d", vol_perc)
+                logging.error("Volume is outside range: %d", vol_perc)
                 return
 
             func_action = self._lmsquery.set_volume
@@ -89,15 +87,15 @@ class Lms():
                     }.get(action, [None, None])
 
         if not func_action:
-            self._log.warning("action '%s' isn't defined", action)
+            logging.warning("action '%s' isn't defined", action)
             return
 
-        self._log.info("'%s'", action)
+        logging.info("'%s'", action)
 
         try:
             func_action(self._playerid, *func_action_args)
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            self._log.warning(ex)
+            logging.warning(ex)
             return
 
         self.update()
@@ -105,13 +103,13 @@ class Lms():
 
     def update(self):
         """Update stats and update redis if they've changed."""
-        self._log.debug("updating info")
+        logging.debug("updating info")
 
         self._redis.set_alive()
 
         if not redis_cdsp_ping(self._redis, max_age=10):
             # no use to refresh stuff if cdsp isn't on
-            self._log.debug("CDSP isn't running - won't refresh")
+            logging.debug("CDSP isn't running - won't refresh")
             return
 
         prev_stats = self._stats.copy()
@@ -121,13 +119,13 @@ class Lms():
             player = next((item for item in self._lmsquery.get_players()
                            if item["playerid"] == self._playerid), None)
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            self._log.debug("Connection error: %s", ex)
+            logging.debug("Connection error: %s", ex)
             return
 
         if not player:
             # debug loglevel to avoid flooding logs when the player - eg.
             # squeezelite isn't running
-            self._log.debug("Player not found")
+            logging.debug("Player not found")
             return
 
         try:
@@ -143,10 +141,10 @@ class Lms():
                 self._stats['title'] = (
                         self._lmsquery.get_current_title(self._playerid))
         except KeyError as ex:
-            self._log.error(ex)
+            logging.error(ex)
             return
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            self._log.debug("Connection error: %s", ex)
+            logging.debug("Connection error: %s", ex)
             return
 
         # update redis even if stats haven't changed; it fixes rare corner case
@@ -154,6 +152,6 @@ class Lms():
         self._redis.update_stats(self._stats)
 
         if prev_stats != self._stats:
-            self._log.debug("stats have changed - updating redis")
-            self._log.debug(self._stats)
+            logging.debug("stats have changed - updating redis")
+            logging.debug(self._stats)
             self._redis.publish_event("stats")

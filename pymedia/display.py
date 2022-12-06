@@ -4,11 +4,8 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import pymedia_redis
 import pymedia_display
-
-#import pymedia_utils
 
 from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 

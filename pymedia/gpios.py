@@ -10,7 +10,7 @@ import gpiod
 
 import pymedia_redis
 import pymedia_gpio
-import pymedia_utils
+from pymedia_utils import SimpleThreads
 from pymedia_cdsp import redis_cdsp_ping
 
 from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
     panel_led = pymedia_gpio.GpioOutputPin(gpiochip0, 17)
 
-    threads = pymedia_utils.SimpleThreads()
+    threads = SimpleThreads()
 
     # rear panel led
     threads.add_target(manage_status_led, panel_led, redis)

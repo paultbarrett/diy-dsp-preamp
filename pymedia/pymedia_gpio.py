@@ -4,11 +4,12 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
 import threading
 
 import gpiod
+
+from pymedia_utils import logging, Log
 
 # ---------------------
 
@@ -59,19 +60,18 @@ def wait_input_pin(gpiochip, pin, callback, threaded_callback=False,
                 callback(*cb_args)
 
 
-class GpioOutputPin:
+class GpioOutputPin(metaclass=Log):
     def __init__(self, gpiochip, pin):
-        self._log = logging.getLogger(self.__class__.__name__)
-        self._log.debug("args gpiochip=%s pin=%d", gpiochip, pin)
+        logging.debug("args gpiochip=%s pin=%d", gpiochip, pin)
         try:
             if gpiochip is None:
-                self._log.error("gpiochip not found")
+                logging.error("gpiochip not found")
                 raise SystemExit
-            self._log.debug("type %s %s", type(gpiochip), type(pin))
+            logging.debug("type %s %s", type(gpiochip), type(pin))
             self._line = gpiochip.get_line(pin)
             self._line.request(consumer="pymedia", type=gpiod.LINE_REQ_DIR_OUT)
         except Exception as ex:
-            self._log.error("Error: %s", ex)
+            logging.error("Error: %s", ex)
             raise SystemExit from ex
 
     def set_value(self, level=0):
@@ -82,7 +82,7 @@ class GpioOutputPin:
             else:
                 self._line.set_value(0)
         except Exception as ex:
-            self._log.error("Error: %s", ex)
+            logging.error("Error: %s", ex)
             raise SystemExit from ex
 
     def blink(self, interval=1):

@@ -2,7 +2,6 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
 import threading
 import redis
@@ -12,6 +11,8 @@ import board
 import busio
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
+
+from pymedia_utils import logging, Log
 
 from pymedia_cdsp import redis_cdsp_ping
 
@@ -37,10 +38,9 @@ DISPLAY_TIMEOUT_AUTO_OFF = 0    # 0 to disable (seconds)
 
 # ---------------------
 
-class Display():
+class Display(metaclass=Log):
 
     def __init__(self, _redis, pubsubs):
-        self._log = logging.getLogger(self.__class__.__name__)
         self._redis = _redis
         self._i2c = busio.I2C(board.SCL, board.SDA)
         # 128x16 Yellow | 128x48 Sky Blue
@@ -67,7 +67,7 @@ class Display():
             self._font_symbols = ImageFont.truetype(DISPLAY_FONT_SYMBOLS, 20)
             self._font_large = ImageFont.truetype(DISPLAY_FONT_LARGE, 62)
         except FileNotFoundError as ex:
-            self._log.error("missing font file in path (default: font5x8.bin)")
+            logging.error("missing font file in path (default: font5x8.bin)")
             raise SystemExit from ex
 
         ( self._volume_unit_width, self._volume_unit_height ) = \
@@ -100,7 +100,7 @@ class Display():
                 < DISPLAY_MAX_PLAYER_STATS_AGE):
                 player_is_stale = False
         except TypeError:
-            self._log.warning("PLAYER:last_alive isn't a float (not set yet ?)")
+            logging.warning("PLAYER:last_alive isn't a float (not set yet ?)")
 
         max_playback_signal_rms = (
             self._redis.get_s("CDSP:max_playback_signal_rms"))
@@ -138,7 +138,7 @@ class Display():
                     )
                     else -99
                 )
-        self._log.debug("banner text is '%s'", text)
+        logging.debug("banner text is '%s'", text)
         draw.text(
             (self._disp.width - DISPLAY_X_OFFSET, 16 - DISPLAY_LINE_SPACING),
             text, font=self._font_small, fill=DISPLAY_FG_COLOR, spacing=0,
@@ -176,7 +176,7 @@ class Display():
 
     def update_condition(self):
         """Default update condition: refresh when CamillaDSP is active."""
-        self._log.debug("Default condition: check Redis/CamillaDSP status")
+        logging.debug("Default condition: check Redis/CamillaDSP status")
         if not redis_cdsp_ping(self._redis, max_age=10):
             return False
         return True
@@ -192,10 +192,10 @@ class Display():
         # save the current thread id for later comparison
         update_id = self._update_id
 
-        self._log.debug("refreshing display - thread ID is %d", update_id)
+        logging.debug("refreshing display - thread ID is %d", update_id)
 
         if not self.update_condition():
-            self._log.debug("Condition was False - display is off")
+            logging.debug("Condition was False - display is off")
             self.blank()
             return
 
@@ -213,7 +213,7 @@ class Display():
 
         # stop if another thread took over
         if self._update_id != update_id:
-            self._log.debug("Won't redraw - new event available (s:%d|c:%d)",
+            logging.debug("Won't redraw - new event available (s:%d|c:%d)",
                            self._update_id, update_id)
             return
 
@@ -222,7 +222,7 @@ class Display():
 
         # stop if another thread took over
         if self._update_id != update_id:
-            self._log.debug("Won't redraw - new event available (s:%d|c:%d)",
+            logging.debug("Won't redraw - new event available (s:%d|c:%d)",
                            self._update_id, update_id)
             return
 
@@ -231,7 +231,7 @@ class Display():
         self._disp.image(image)
         self._disp.show()
 
-        self._log.debug("render: %s", time.monotonic() - start_render)
+        logging.debug("render: %s", time.monotonic() - start_render)
 
     def wait_events(self):
         """Wait for redis events / update display on each event."""
@@ -239,25 +239,25 @@ class Display():
         # bug: 'ignore_subscribe_messages' doesn't seem to work with
         # get_message(timeout=...) so we'll immediately get as many messages as
         # subscription channels at startup
-        self._log.debug("waiting events on pubsubs %s", self._pubsubs)
+        logging.debug("waiting events on pubsubs %s", self._pubsubs)
         pubsub = self._redis.redis.pubsub(ignore_subscribe_messages=True)
         try:
             pubsub.subscribe(self._pubsubs)
         except redis.exceptions.RedisError as ex:
-            self._log.error(ex)
+            logging.error(ex)
             return
 
         while True:
             try:
                 message = pubsub.get_message(timeout=DISPLAY_UPDATE_INTERVAL)
                 if message:
-                    self._log.debug("received message %s", message)
+                    logging.debug("received message %s", message)
                 else:
-                    self._log.debug("timeout (%s seconds)",
+                    logging.debug("timeout (%s seconds)",
                                    DISPLAY_UPDATE_INTERVAL)
                 thread = threading.Thread(target = self.update)
                 self._update_id += 1
                 thread.start()
             except redis.exceptions.RedisError as ex:
-                self._log.error(ex)
+                logging.error(ex)
                 return

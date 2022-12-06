@@ -2,13 +2,12 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
+from pymedia_utils import logging, Log
 
-class ProcessEvent():
+class ProcessEvent(metaclass=Log):
     def __init__(self, callback, discard_time_window=0.1, max_age=0.15,
                  cb_args=()):
-        self._log = logging.getLogger(self.__class__.__name__)
         self._discard_time_window = discard_time_window
         self._max_age = max_age
         self._cur_event_id = 0
@@ -35,22 +34,22 @@ class ProcessEvent():
         event_id = self._cur_event_id
         run_callback = False
         if time.time() - self._last_event_time > self._max_age:
-            self._log.debug("thread id # %s: last event time was more than"
+            logging.debug("thread id # %s: last event time was more than"
                           " %fs ago - running",
                           event_id, self._max_age)
             run_callback = True
         else:
-            self._log.debug("thread id # %s: an event happened less than %fs"
+            logging.debug("thread id # %s: an event happened less than %fs"
                           " ago - waiting %fs to proceed", event_id,
                           self._max_age,
                           self._discard_time_window)
             time.sleep(self._discard_time_window)
             if event_id == self._cur_event_id:
-                self._log.debug("thread id # %s: no new event - running",
+                logging.debug("thread id # %s: no new event - running",
                               event_id)
                 run_callback = True
             else:
-                self._log.debug("thread id # %s: event id %s took over",
+                logging.debug("thread id # %s: event id %s took over",
                               event_id, self._cur_event_id)
 
         if run_callback:

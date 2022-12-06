@@ -6,6 +6,7 @@ import select
 import logging
 import threading
 from pyalsa import alsamixer
+from pymedia_utils import logging
 
 # https://www.alsa-project.org/alsa-doc/alsa-lib/
 

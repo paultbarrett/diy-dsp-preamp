@@ -5,11 +5,11 @@
 # pylint: disable=missing-function-docstring
 
 import socket
-import logging
 import re
 from urllib.parse import unquote
 
 import pymedia_redis
+from pymedia_utils import logging
 
 from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
@@ -19,7 +19,7 @@ LMS_SERVER = "juke"
 LMS_SERVER_PORT = 9090
 LMS_PLAYERID = "13:89:0e:c8:1d:a5"
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 # ---------------------
 

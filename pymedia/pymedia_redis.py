@@ -2,7 +2,6 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
 import threading
 
@@ -10,8 +9,11 @@ import threading
 import json
 import redis
 
+from pymedia_utils import logging, Log
 
-class RedisHelper():
+# ---------------------
+
+class RedisHelper(metaclass=Log):
     def __init__(
             self,
             host,
@@ -20,7 +22,6 @@ class RedisHelper():
             pubsub_name,
             decode_responses=False,
             ):
-        self._log = logging.getLogger(f"{pubsub_name}:{self.__class__.__name__}")
         self.redis = redis.Redis(host=host, port=port, db=database,
                                  decode_responses=decode_responses)
         self.pubsub_name = pubsub_name
@@ -30,7 +31,7 @@ class RedisHelper():
         try:
             self.redis.ping()
         except (redis.exceptions.ConnectionError, ConnectionRefusedError) as ex:
-            self._log.error(ex)
+            logging.error(ex)
             raise SystemExit from ex
 
     def get_s(self, key, conv=None):
@@ -40,7 +41,7 @@ class RedisHelper():
         except (ValueError, TypeError):
             val = None
         except redis.exceptions.RedisError as ex:
-            self._log.error(ex)
+            logging.error(ex)
             raise SystemExit from ex
         if conv == "string":
             return '' if val is None else str(val)
@@ -51,7 +52,7 @@ class RedisHelper():
         try:
             self.redis.set(key, json.dumps(value))
         except redis.exceptions.RedisError as ex:
-            self._log.error(ex)
+            logging.error(ex)
             raise SystemExit from ex
 
     def t_wait_action(self, func_process):
@@ -67,14 +68,14 @@ class RedisHelper():
             pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
             pubsub.subscribe(self.pubsub_action_name)
         except redis.exceptions.RedisError as ex:
-            self._log.error("Could not subscribe to %s: %s",
+            logging.error("Could not subscribe to %s: %s",
                            self.pubsub_action_name, ex)
             raise SystemExit from ex
         try:
             while True:
                 message = pubsub.get_message(timeout=1)
                 if message:
-                    self._log.debug("received message '%s' ; action is '%s'",
+                    logging.debug("received message '%s' ; action is '%s'",
                                   message, message["data"].decode())
                     thread = threading.Thread(target=func_process,
                         args=(message["data"].decode(),))
@@ -97,7 +98,7 @@ class RedisHelper():
             for _try in range(wait_set_tries):
                 if self.get_s(f"{self.pubsub_name}:last_alive") == time_now:
                     return
-                self._log.debug("%s:last_alive isn't updated yet - try # %d/%d",
+                logging.debug("%s:last_alive isn't updated yet - try # %d/%d",
                                self.pubsub_name, _try, wait_set_tries)
                 time.sleep(0.1)
             raise Exception(
@@ -136,23 +137,23 @@ class RedisHelper():
 
     def publish_event(self, event_data):
         """Publish (send) an event."""
-        self._log.debug("publishing event '%s:%s'", self.pubsub_event_name,
+        logging.debug("publishing event '%s:%s'", self.pubsub_event_name,
                       event_data)
         try:
             self.redis.publish(self.pubsub_event_name, event_data)
         except redis.exceptions.RedisError as ex:
-            self._log.error("Could not publish event '%s:%s': %s",
+            logging.error("Could not publish event '%s:%s': %s",
                            self.pubsub_event_name, event_data, ex)
             raise SystemExit from ex
 
     def send_action(self, dest, action):
         """Publish (send) an action."""
         pubsub_action_name = f"{dest}:ACTION"
-        self._log.debug("publishing (sending) action '%s:%s'",
+        logging.debug("publishing (sending) action '%s:%s'",
                        pubsub_action_name, action)
         try:
             self.redis.publish(pubsub_action_name, action)
         except redis.exceptions.RedisError as ex:
-            self._log.error("Could not send action '%s:%s': %s",
+            logging.error("Could not send action '%s:%s': %s",
                            pubsub_action_name, action, ex)
             raise SystemExit from ex

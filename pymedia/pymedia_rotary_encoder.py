@@ -4,9 +4,10 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import threading
 import gpiod
+
+from pymedia_utils import logging, Log
 
 # Software debouncing based on
 # https://github.com/buxtronix/arduino/tree/master/libraries/Rotary
@@ -41,12 +42,11 @@ ttable = [
     ]
 
 
-class RotaryEncoder():
+class RotaryEncoder(metaclass=Log):
     """Manage a rotary encoder with libgpiod."""
 
     def __init__(self, gpiochip, pin1, pin2, callback, invert=False,
                  threaded_callback=False):
-        self._log = logging.getLogger(self.__class__.__name__)
         self._gpiochip = gpiochip
         self._pin1 = pin1
         self._pin2 = pin2
@@ -98,7 +98,7 @@ class RotaryEncoder():
     def _run_callback(self):
         """Run self._callback function (optionally in a thread)."""
         if self._callback is not None:
-            self._log.debug("running callback | val:%s | thread: %s",
+            logging.debug("running callback | val:%s | thread: %s",
                             self._value, self._threaded_callback)
             direction = 1 if self._direction == DIR_CW else -1
             if self._threaded_callback:
