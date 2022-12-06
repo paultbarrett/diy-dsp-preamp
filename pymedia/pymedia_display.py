@@ -39,7 +39,7 @@ DISPLAY_TIMEOUT_AUTO_OFF = 0    # 0 to disable (seconds)
 
 class Display():
 
-    def __init__(self, _redis):
+    def __init__(self, _redis, pubsubs):
         self._log = logging.getLogger(self.__class__.__name__)
         self._redis = _redis
         self._i2c = busio.I2C(board.SCL, board.SDA)
@@ -56,7 +56,8 @@ class Display():
         self._is_blank = False
         self.draw_funcs = []
 
-        self.t_wait_events = threading.Thread(target = self.wait_events)
+        self.t_wait_events = threading.Thread(target = self.wait_events,
+                                              args=(pubsubs,))
         self.t_wait_events.daemon = True
 
         try:
@@ -229,7 +230,7 @@ class Display():
 
         self._log.debug("render: %s", time.monotonic() - start_render)
 
-    def wait_events(self):
+    def wait_events(self, pubsubs):
         """Wait for redis events / update display on each event."""
 
         # bug: 'ignore_subscribe_messages' doesn't seem to work with
@@ -237,10 +238,7 @@ class Display():
         # subscription channels at startup
         pubsub = self._redis.redis.pubsub(ignore_subscribe_messages=True)
         try:
-            pubsub.subscribe(
-                    'PLAYER:EVENT',
-                    'CDSP:EVENT',
-                    )
+            pubsub.subscribe(pubsubs)
         except redis.exceptions.RedisError as ex:
             self._log.error(ex)
             return
