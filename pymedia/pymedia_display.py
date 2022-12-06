@@ -117,16 +117,22 @@ class Display():
             font=self._font_symbols, fill=DISPLAY_FG_COLOR, spacing=0,
             anchor='lb')
 
-        # draw config index and rms/peak levels
-        config_status = ( '-' if self._redis.get_s("CDSP:switching_config")
-                         else ' ' )
+        # draw config index (0->'A', 1->'B, ...) and rms/peak levels
         text = "{}{} {:02d}/{:02d}".format(
-                chr(65 + config_index),    # 0->'A', 1->'B', ...
-                config_status,
-                max_playback_signal_rms if max_playback_signal_rms > -99
+                chr(65 + config_index) if config_index is not None else ' ',
+                '-' if self._redis.get_s("CDSP:switching_config") else ' ',
+                max_playback_signal_rms if (
+                    max_playback_signal_rms is not None
+                    and max_playback_signal_rms > -99
+                    )
                     else -99,
-                max_playback_signal_peak if max_playback_signal_peak > -99
-                    else -99)
+                max_playback_signal_peak if (
+                    max_playback_signal_peak is not None
+                    and max_playback_signal_peak > -99
+                    )
+                    else -99
+                )
+        self._log.debug("banner text is '%s'", text)
         draw.text(
             (self._disp.width - DISPLAY_X_OFFSET, 16 - DISPLAY_LINE_SPACING),
             text, font=self._font_small, fill=DISPLAY_FG_COLOR, spacing=0,
@@ -161,19 +167,6 @@ class Display():
                  self._volume_unit_height - DISPLAY_LINE_SPACING), "M",
                 font=self._font_symbols, fill=DISPLAY_FG_COLOR, spacing=0,
                 anchor='rb')
-
-    def _draw_wifi_relay_status(self, draw):
-        """Draw wifi and relay status (main display area)."""
-
-        wifi_status = "W" if self._redis.get_s("WIFI:state") else "_"
-        relay_status = "R" if self._redis.get_s("RELAY:state") else "_"
-
-        draw.text(
-            (self._disp.width - DISPLAY_X_OFFSET, self._disp.height -
-             self._volume_unit_height - DISPLAY_LINE_SPACING),
-             f"{wifi_status} {relay_status}",
-            font=self._font_large, fill=DISPLAY_FG_COLOR, spacing=0,
-            anchor='mb')
 
     def update(self, f_condition=None, f_condition_args=()):
 
@@ -235,6 +228,7 @@ class Display():
         # bug: 'ignore_subscribe_messages' doesn't seem to work with
         # get_message(timeout=...) so we'll immediately get as many messages as
         # subscription channels at startup
+        self._log.debug("waiting events on pubsubs %s", pubsubs)
         pubsub = self._redis.redis.pubsub(ignore_subscribe_messages=True)
         try:
             pubsub.subscribe(pubsubs)
