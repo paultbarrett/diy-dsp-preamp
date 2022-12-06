@@ -13,6 +13,8 @@ import busio
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
+from pymedia_cdsp import redis_cdsp_ping
+
 # ---------------------
 
 DISPLAY_WIDTH = 128
@@ -37,7 +39,7 @@ DISPLAY_TIMEOUT_AUTO_OFF = 0    # 0 to disable (seconds)
 
 class Display():
 
-    def __init__(self, _redis, *args, **kwargs):
+    def __init__(self, _redis, pubsubs):
         self._log = logging.getLogger(self.__class__.__name__)
         self._redis = _redis
         self._i2c = busio.I2C(board.SCL, board.SDA)
@@ -52,10 +54,9 @@ class Display():
         self._timeout_auto_off = DISPLAY_TIMEOUT_AUTO_OFF
         self._update_id = 0
         self._is_blank = False
-        self.draw_funcs = []
+        self._pubsubs = pubsubs
 
-        self.t_wait_events = threading.Thread(target = self.wait_events,
-                                              args=args, kwargs=kwargs)
+        self.t_wait_events = threading.Thread(target = self.wait_events)
         self.t_wait_events.daemon = True
 
         try:
@@ -80,6 +81,11 @@ class Display():
             self._disp.fill(0)
             self._disp.show()
             self._is_blank = True
+
+    def draw_functions(self, draw):
+        """Default drawing functions: draw banner and CamillaDSP volume."""
+        self.draw_status_bar(draw)
+        self.draw_cdsp_volume(draw)
 
     # https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
     def draw_status_bar(self, draw):
@@ -168,8 +174,14 @@ class Display():
                 font=self._font_symbols, fill=DISPLAY_FG_COLOR, spacing=0,
                 anchor='rb')
 
-    def update(self, f_condition=None, f_condition_args=()):
+    def update_condition(self):
+        """Default update condition: refresh when CamillaDSP is active."""
+        self._log.debug("Default condition: check Redis/CamillaDSP status")
+        if not redis_cdsp_ping(self._redis, max_age=10):
+            return False
+        return True
 
+    def update(self):
         """Update (refresh) the display.
 
         Blocking function, so executed from within a thread - see wait_events().
@@ -182,7 +194,7 @@ class Display():
 
         self._log.debug("refreshing display - thread ID is %d", update_id)
 
-        if f_condition and not f_condition(*f_condition_args):
+        if not self.update_condition():
             self._log.debug("Condition was False - display is off")
             self.blank()
             return
@@ -206,8 +218,7 @@ class Display():
             return
 
         # draw
-        for func in self.draw_funcs:
-            func(draw)
+        self.draw_functions(draw)
 
         # stop if another thread took over
         if self._update_id != update_id:
@@ -222,16 +233,16 @@ class Display():
 
         self._log.debug("render: %s", time.monotonic() - start_render)
 
-    def wait_events(self, pubsubs, *args, **kwargs):
+    def wait_events(self):
         """Wait for redis events / update display on each event."""
 
         # bug: 'ignore_subscribe_messages' doesn't seem to work with
         # get_message(timeout=...) so we'll immediately get as many messages as
         # subscription channels at startup
-        self._log.debug("waiting events on pubsubs %s", pubsubs)
+        self._log.debug("waiting events on pubsubs %s", self._pubsubs)
         pubsub = self._redis.redis.pubsub(ignore_subscribe_messages=True)
         try:
-            pubsub.subscribe(pubsubs)
+            pubsub.subscribe(self._pubsubs)
         except redis.exceptions.RedisError as ex:
             self._log.error(ex)
             return
@@ -244,8 +255,7 @@ class Display():
                 else:
                     self._log.debug("timeout (%s seconds)",
                                    DISPLAY_UPDATE_INTERVAL)
-                thread = threading.Thread(target = self.update, args=args,
-                                          kwargs=kwargs)
+                thread = threading.Thread(target = self.update)
                 self._update_id += 1
                 thread.start()
             except redis.exceptions.RedisError as ex:
