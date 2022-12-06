@@ -400,8 +400,9 @@ class CDsp():
                             )
                     #self._log.debug("Found index is %d", index)
                 except ValueError:
-                    self._log.warning("Couldn't find current configuration %s",
-                                     cur_config_path)
+                    self._log.warning("Couldn't find active configuration (%s)"
+                                      " in user configuration (%s)",
+                                     cur_config_path, self._cfg['configs'])
                 else:
                     self._stats['config_index' ] = self._config_index
 
