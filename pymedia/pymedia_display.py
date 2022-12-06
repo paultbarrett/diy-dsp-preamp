@@ -255,9 +255,6 @@ class Display(metaclass=Log):
                 else:
                     logging.debug("timeout (%s seconds)",
                                    DISPLAY_UPDATE_INTERVAL)
-                    # blank to fix rare display corruption (bug in
-                    # adafruit_ssd1306 ?)
-                    self.blank()
                 thread = threading.Thread(target = self.update)
                 self._update_id += 1
                 thread.start()
