@@ -13,8 +13,6 @@ import busio
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
-from pymedia_cdsp import redis_cdsp_ping
-
 # ---------------------
 
 DISPLAY_WIDTH = 128
@@ -39,7 +37,7 @@ DISPLAY_TIMEOUT_AUTO_OFF = 0    # 0 to disable (seconds)
 
 class Display():
 
-    def __init__(self, _redis, pubsubs):
+    def __init__(self, _redis, *args, **kwargs):
         self._log = logging.getLogger(self.__class__.__name__)
         self._redis = _redis
         self._i2c = busio.I2C(board.SCL, board.SDA)
@@ -57,7 +55,7 @@ class Display():
         self.draw_funcs = []
 
         self.t_wait_events = threading.Thread(target = self.wait_events,
-                                              args=(pubsubs,))
+                                              args=args, kwargs=kwargs)
         self.t_wait_events.daemon = True
 
         try:
@@ -177,7 +175,8 @@ class Display():
             font=self._font_large, fill=DISPLAY_FG_COLOR, spacing=0,
             anchor='mb')
 
-    def update(self):
+    def update(self, f_condition=None, f_condition_args=()):
+
         """Update (refresh) the display.
 
         Blocking function, so executed from within a thread - see wait_events().
@@ -190,8 +189,8 @@ class Display():
 
         self._log.debug("refreshing display - thread ID is %d", update_id)
 
-        if not redis_cdsp_ping(self._redis, max_age=10):
-            self._log.debug("CDSP isn't running - display is off")
+        if f_condition and not f_condition(*f_condition_args):
+            self._log.debug("Condition was False - display is off")
             self.blank()
             return
 
@@ -230,7 +229,7 @@ class Display():
 
         self._log.debug("render: %s", time.monotonic() - start_render)
 
-    def wait_events(self, pubsubs):
+    def wait_events(self, pubsubs, *args, **kwargs):
         """Wait for redis events / update display on each event."""
 
         # bug: 'ignore_subscribe_messages' doesn't seem to work with
@@ -251,7 +250,8 @@ class Display():
                 else:
                     self._log.debug("timeout (%s seconds)",
                                    DISPLAY_UPDATE_INTERVAL)
-                thread = threading.Thread(target = self.update)
+                thread = threading.Thread(target = self.update, args=args,
+                                          kwargs=kwargs)
                 self._update_id += 1
                 thread.start()
             except redis.exceptions.RedisError as ex:
