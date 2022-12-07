@@ -73,7 +73,7 @@ class LfeTone(metaclass=Log):
         self.threads.add_target(self.loop_play)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
 
-    def action(self, action):
+    def action(self, *args, action="", **kwargs):
         """Run user actions.
 
         This function is usually called by a loop waiting for user actions

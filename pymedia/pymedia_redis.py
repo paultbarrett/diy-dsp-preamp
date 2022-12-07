@@ -55,14 +55,14 @@ class RedisHelper(metaclass=Log):
             logging.error(ex)
             raise SystemExit from ex
 
-    def t_wait_action(self, func_process):
+    def t_wait_action(self, func, *args, **kwargs):
         """Create and return a thread to wait_message()."""
         thread = threading.Thread(target=self.wait_action,
-                                  args=(func_process,))
+                                  args=(func, args), kwargs=kwargs)
         thread.daemon = True
         return thread
 
-    def wait_action(self, func_process):
+    def wait_action(self, func, *args, **kwargs):
         """Wait for messages and run user provided function in thread."""
         try:
             pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
@@ -77,8 +77,9 @@ class RedisHelper(metaclass=Log):
                 if message:
                     logging.debug("received message '%s' ; action is '%s'",
                                   message, message["data"].decode())
-                    thread = threading.Thread(target=func_process,
-                        args=(message["data"].decode(),))
+                    kwargs["action"] = message["data"].decode()
+                    thread = threading.Thread(target=func, args=args,
+                                              kwargs=kwargs)
                     thread.start()
         except KeyboardInterrupt:
             return
