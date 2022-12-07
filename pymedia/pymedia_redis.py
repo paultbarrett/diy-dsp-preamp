@@ -57,13 +57,15 @@ class RedisHelper(metaclass=Log):
 
     def t_wait_action(self, func, *args, **kwargs):
         """Create and return a thread to wait_message()."""
+        logging.debug("Creating wait_action thread")
         thread = threading.Thread(target=self.wait_action,
-                                  args=(func, args), kwargs=kwargs)
+                                  args=(func, *args), kwargs=kwargs)
         thread.daemon = True
         return thread
 
     def wait_action(self, func, *args, **kwargs):
         """Wait for messages and run user provided function in thread."""
+        logging.debug("Waiting for messages (actions)")
         try:
             pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
             pubsub.subscribe(self.pubsub_action_name)

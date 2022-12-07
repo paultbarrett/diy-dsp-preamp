@@ -45,7 +45,7 @@ class Lms(metaclass=Log):
             time.sleep(update_interval)
             self.update()
 
-    def action(self, *args, action="", **kwargs):
+    def action(self, action=""):
         """Run user actions.
 
         This function is usually called by a loop waiting for user actions

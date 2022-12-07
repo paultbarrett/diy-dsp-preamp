@@ -125,7 +125,7 @@ class CDsp(metaclass=Log):
 
         return False
 
-    def action(self, *args, action="", **kwargs):
+    def action(self, action=""):
         """Run user actions.
 
         This function is usually called by a loop waiting for user actions
