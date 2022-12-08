@@ -27,7 +27,6 @@ logging.basicConfig(
 class Log(type):
     """Logging metaclass.
     Name mangling ensures each class uses its own logger.
-    Logger name derived accounting for inheritance for the bonus marks
 
     The logger for each class is created at class definition and accessed via a
     direct attribute reference, avoiding a getLogger() call.
@@ -126,7 +125,7 @@ class AutoOff(metaclass=Log):
             state = self._func_condrun(*self._func_condrun_args)
             if state:
                 if self._func_test(*self._func_test_args) or not prev_state:
-                    logging.debug("resetting end time (%s)", self.label)
+                    logging.debug("(re)setting end time (%s)", self.label)
                     end_time = time.monotonic() + self._timeout * 60.0
                 elif end_time:
                     if time.monotonic() >= end_time:
