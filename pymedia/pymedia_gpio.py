@@ -9,7 +9,7 @@ import threading
 
 import gpiod
 
-from pymedia_utils import logging, Log, LOGFORMAT, LOGFORMAT_DATE
+import pymedia_logger
 
 # ---------------------
 
@@ -18,7 +18,7 @@ HELD_TIME = 2
 
 # ----------------
 
-class DigitalInputPin(metaclass=Log):
+class DigitalInputPin():
 
     def __init__(self,
                  gpiochip,
@@ -32,17 +32,10 @@ class DigitalInputPin(metaclass=Log):
                  held_time=HELD_TIME,
                  ):
 
-        # overly complex way to change the logger format to display the
-        # gpiochip/pin to help debugging
-        self._log = logging.getLogger()
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(f"{LOGFORMAT} ({gpiochip.name()}:{pin})",
-                                      datefmt=LOGFORMAT_DATE)
-        handler.setFormatter(formatter)
-        self._log.handlers = []    # logger.propagate = False
-        self._log.addHandler(handler)
+        self._log = pymedia_logger.get_logger(__class__.__name__,
+                                              f"[{gpiochip.name()}:{pin}]")
 
-        logging.debug("Initializing")
+        self._log.debug("Initializing")
 
         if not cb_pressed and not cb_held:
             raise Exception("no pressed/held callback defined !")
@@ -180,18 +173,23 @@ class DigitalInputPin(metaclass=Log):
                 cb_held_thread.start()
 
 
-class DigitalOutputPin(metaclass=Log):
+class DigitalOutputPin():
     def __init__(self, gpiochip, pin, default_value=0):
-        logging.debug("Initializing %s:%s", gpiochip.name(), pin)
+
+        self._log = pymedia_logger.get_logger(__class__.__name__,
+                                              f"[{gpiochip.name()}:{pin}]")
+
+        self._log.debug("Initializing")
+
         try:
             if gpiochip is None:
-                logging.error("gpiochip not found")
+                self._log.error("gpiochip not found")
                 raise SystemExit
             self._line = gpiochip.get_line(pin)
             self._line.request(consumer="pymedia", type=gpiod.LINE_REQ_DIR_OUT,
                                default_val=default_value)
         except Exception as ex:
-            logging.error("Error: %s", ex)
+            self._log.error("Error: %s", ex)
             raise SystemExit from ex
 
     def set_value(self, level=0):
@@ -202,7 +200,7 @@ class DigitalOutputPin(metaclass=Log):
             else:
                 self._line.set_value(0)
         except Exception as ex:
-            logging.error("Error: %s", ex)
+            self._log.error("Error: %s", ex)
             raise SystemExit from ex
 
     def get_value(self):
@@ -210,7 +208,7 @@ class DigitalOutputPin(metaclass=Log):
         try:
             return self._line.get_value()
         except Exception as ex:
-            logging.error("Error: %s", ex)
+            self._log.error("Error: %s", ex)
             raise SystemExit from ex
 
     def blink(self, interval=1):

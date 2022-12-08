@@ -3,10 +3,11 @@
 # pylint: disable=missing-function-docstring
 
 import select
-import logging
 import threading
 from pyalsa import alsamixer
-from pymedia_utils import logging
+import pymedia_logger
+
+logger = pymedia_logger.get_logger(__name__)
 
 # https://www.alsa-project.org/alsa-doc/alsa-lib/
 
@@ -32,7 +33,7 @@ def poll(pcm, pcm_name, callback, threaded_callback=False, cb_args=()):
     while True:
         poller.poll()
         mixer.handle_events()
-        logging.debug("Event")
+        logger.debug("Event")
         if threaded_callback:
             thread = threading.Thread(target=callback, args=(alsa, *cb_args))
             thread.daemon = True

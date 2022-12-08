@@ -3,16 +3,18 @@
 # pylint: disable=missing-function-docstring
 
 import os
-import logging
 import time
 
 from camilladsp import CamillaConnection, CamillaError, ProcessingState
 
-from pymedia_utils import logging, Log, SimpleThreads
+import pymedia_logger
+from pymedia_utils import SimpleThreads
+
+logger = pymedia_logger.get_logger(__name__)
 
 # ---------------------
 
-class CDsp(metaclass=Log):
+class CDsp():
     """ Helper class to manage a CamillaDSP instance.
 
     sample config passed as argument in init():
@@ -39,6 +41,7 @@ class CDsp(metaclass=Log):
     """
 
     def __init__(self, cfg, _redis = None):
+        self._log = pymedia_logger.get_logger(__class__.__name__)
         self._cfg = cfg
         self._redis = _redis
         self._setting_volume = False
@@ -85,9 +88,9 @@ class CDsp(metaclass=Log):
                     self._cdsp.connect()
                 except (ConnectionRefusedError, CamillaError, IOError) as ex:
                     # log (debug) every time, but log (info) once
-                    logging.debug("Couldn't connect to CamillaDSP: %s", ex)
+                    self._log.debug("Couldn't connect to CamillaDSP: %s", ex)
                     if connect_attempts == 0:
-                        logging.info("Couldn't connect to CamillaDSP")
+                        self._log.info("Couldn't connect to CamillaDSP")
                     connect_attempts += 1
                     # turn off player if we're not connected
                     if (self._redis
@@ -96,7 +99,7 @@ class CDsp(metaclass=Log):
                         self._redis.send_action('PLAYER', "off")
                 else:
                     connect_attempts = 0
-                    logging.info("Connected to CamillaDSP on %s:%d"
+                    self._log.info("Connected to CamillaDSP on %s:%d"
                                   " - version:%s", self._cfg['server'],
                                    self._cfg['port'],
                                   self._cdsp.get_version()
@@ -121,7 +124,7 @@ class CDsp(metaclass=Log):
                                              ProcessingState.PAUSED ]):
                 return True
         except (ConnectionRefusedError, CamillaError, IOError) as ex:
-            logging.warning("Exception: %s", ex)
+            self._log.warning("Exception: %s", ex)
 
         return False
 
@@ -175,10 +178,10 @@ class CDsp(metaclass=Log):
                     }.get(action, [None, None])
 
         if not func_action:
-            logging.warning("action '%s' isn't defined", action)
+            self._log.warning("action '%s' isn't defined", action)
             return
 
-        logging.info("'%s'", action)
+        self._log.info("'%s'", action)
 
         func_action(*func_action_args)
 
@@ -198,7 +201,7 @@ class CDsp(metaclass=Log):
         elif mode == "unmute":
             set_mute = True
         else:
-            logging.warning("mode '%s' isn't defined", mode)
+            self._log.warning("mode '%s' isn't defined", mode)
             return
 
         if set_mute:
@@ -221,7 +224,7 @@ class CDsp(metaclass=Log):
                     if self._cfg['configs_control_player'][self._config_index]:
                         self._redis.send_action('PLAYER', "unpause")
                 except IndexError:
-                    logging.error("No configs_control_player index"
+                    self._log.error("No configs_control_player index"
                                     "defined at index %d",
                                     self._config_index)
 
@@ -249,7 +252,7 @@ class CDsp(metaclass=Log):
         """Increment volume as a percentage of the volume range."""
         vol_db_incr = vol_perc_incr / 100 * (self._cfg['volume_max'] -
                                                self._cfg['volume_min'])
-        logging.debug("Converstion %s -> %s", vol_perc_incr, vol_db_incr)
+        self._log.debug("Converstion %s -> %s", vol_perc_incr, vol_db_incr)
         self.set_volume_incr(vol_db_incr, player_vol_update)
 
     def set_volume_percent(self, vol_perc, player_vol_update=True):
@@ -262,21 +265,21 @@ class CDsp(metaclass=Log):
         # set vol to max/min if it's greater/lower than max/min
         if not (self._cfg['volume_min'] <= vol
                 <= self._cfg['volume_max']):
-            logging.debug("volume '%s' is out of range", vol)
+            self._log.debug("volume '%s' is out of range", vol)
             vol = ( self._cfg['volume_max']
                    if vol > self._cfg['volume_max']
                    else self._cfg['volume_min']
                    )
-        logging.debug("Setting volume to '%s'", vol)
+        self._log.debug("Setting volume to '%s'", vol)
 
         if int(self._cdsp_wp("get_volume")) == int(vol):
-            logging.debug("Current volume already %s", int(vol))
+            self._log.debug("Current volume already %s", int(vol))
             return
 
         # avoid setting volume concurrently (possible as this task is run as
         # a thread)
         while self._setting_volume:
-            logging.debug("A volume change task is already running - wait")
+            self._log.debug("A volume change task is already running - wait")
             time.sleep(0.5)
         self._setting_volume = True
         self._cdsp_wp("set_volume", int(vol))
@@ -292,42 +295,42 @@ class CDsp(metaclass=Log):
                         self._redis.send_action('PLAYER',
                                                 f"volume_perc:{vol_perc}")
                 except IndexError:
-                    logging.error("No configs_control_player index"
+                    self._log.error("No configs_control_player index"
                                     "defined at index %d",
                                     self._config_index)
             self._redis.publish_event("volume")
 
     def load_next_config(self):
-        logging.info("Next config")
+        self._log.info("Next config")
         index = (self._config_index + 1 ) % len(self._cfg['configs'])
         self.load_config(index)
 
     def load_config(self, index):
         """Load config in _cfg['configs'][]."""
         if not self._cfg.get('configs'):
-            logging.error("Trying to load next config but not config defined")
+            self._log.error("Trying to load next config but not config defined")
             return
 
         # avoid switching config concurrently (possible as this task is run as
         # a thread)
         while self._switching_config:
-            logging.info("A 'next config' task is already running - wait")
+            self._log.info("A 'next config' task is already running - wait")
             time.sleep(0.5)
 
         try:
             config_path = (self._cfg.get('config_path') +
                            "/" + self._cfg['configs'][index])
         except IndexError:
-            logging.warning("Couldn't find user configuration for index %s",
+            self._log.warning("Couldn't find user configuration for index %s",
                             index)
             return
 
         self._switching_config = True
 
         if index == self._config_index:
-            logging.info("Index hasn't changed - won't do anything")
+            self._log.info("Index hasn't changed - won't do anything")
         else:
-            logging.info("Reading and validating config file '%s'",
+            self._log.info("Reading and validating config file '%s'",
                           config_path)
 
             # immediate user feedback as read/validates takes a bit of time
@@ -341,14 +344,14 @@ class CDsp(metaclass=Log):
             try:
                 config = self._cdsp.read_config_file(config_path)
                 self._cdsp.validate_config(config)
-                logging.info("Loading config file in CamillaDSP")
+                self._log.info("Loading config file in CamillaDSP")
                 self._cdsp.set_config(config)
                 self._cdsp.set_config_name(config_path)
                 cur_config_path = self._cdsp.get_config_name()
             except CamillaError as ex:
-                logging.error("Can't load config into CamillaDSP: %s", ex)
+                self._log.error("Can't load config into CamillaDSP: %s", ex)
             else:
-                logging.info("Current config is index %d, path '%s'",
+                self._log.info("Current config is index %d, path '%s'",
                               index, cur_config_path)
                 self._config_index = index
 
@@ -365,12 +368,12 @@ class CDsp(metaclass=Log):
         try:
             res = func(*args, **kwargs)
         except ConnectionRefusedError as ex:
-            logging.error(("Can't connect to CamillaDSP, is it running?"
+            self._log.error(("Can't connect to CamillaDSP, is it running?"
                 " Error: %s") , ex)
         except CamillaError as ex:
-            logging.error("CamillaDSP replied with error: %s", ex)
+            self._log.error("CamillaDSP replied with error: %s", ex)
         except IOError as ex:
-            logging.error("Websocket is not connected: %s", ex)
+            self._log.error("Websocket is not connected: %s", ex)
         return res
 
     def update_loop(self):
@@ -386,7 +389,7 @@ class CDsp(metaclass=Log):
         """Update stats and update redis if they've changed."""
         is_on = self.is_on()
         if is_on:
-            logging.debug("Updating stats{}")
+            self._log.debug("Updating stats{}")
 
             if self._redis:
                 self._redis.set_alive(wait_set = True)
@@ -395,7 +398,7 @@ class CDsp(metaclass=Log):
                 # update/sync the current config index
                 cur_config_path = self._cdsp.get_config_name()
             except (ConnectionRefusedError, CamillaError, IOError) as ex:
-                logging.error(ex)
+                self._log.error(ex)
                 return
 
             # update stats{}
@@ -406,9 +409,9 @@ class CDsp(metaclass=Log):
                     self._config_index = self._cfg['configs'].index(
                             os.path.basename(cur_config_path)
                             )
-                    #logging.debug("Found index is %d", index)
+                    #self._log.debug("Found index is %d", index)
                 except (IndexError, ValueError):
-                    logging.warning("Couldn't find active configuration (%s)"
+                    self._log.warning("Couldn't find active configuration (%s)"
                                       " in user configuration (%s)",
                                      cur_config_path, self._cfg['configs'])
                 else:
@@ -418,7 +421,7 @@ class CDsp(metaclass=Log):
                     self._stats['control_player'] = (
                         self._cfg['configs_control_player'][self._config_index])
                 except (IndexError, KeyError) as ex:
-                    logging.warning("cfg['configs_control_player'] error: %s",
+                    self._log.warning("cfg['configs_control_player'] error: %s",
                                       ex)
 
             if self._redis:
@@ -433,14 +436,14 @@ class CDsp(metaclass=Log):
 
                 # update redis and send 'change' action - if any
                 if prev_stats != self._stats:
-                    logging.debug("stats have changed - updating redis")
-                    logging.debug(self._stats)
+                    self._log.debug("stats have changed - updating redis")
+                    self._log.debug(self._stats)
                     self._redis.update_stats(self._stats,
                                              send_data_changed_event = True)
 
 
 def redis_cdsp_ping(redis_r, max_age=20):
     if not bool(redis_r.get_s("CDSP:is_on")):
-        logging.debug("Cdsp isn't running")
+        logger.debug("Cdsp isn't running")
         return False
     return redis_r.check_alive('CDSP', max_age)

@@ -4,16 +4,13 @@
 
 import time
 import threading
-
-# redis
 import json
 import redis
-
-from pymedia_utils import logging, Log
+import pymedia_logger
 
 # ---------------------
 
-class RedisHelper(metaclass=Log):
+class RedisHelper():
     def __init__(
             self,
             host,
@@ -22,6 +19,7 @@ class RedisHelper(metaclass=Log):
             pubsub_name,
             decode_responses=False,
             ):
+        self._log = pymedia_logger.get_logger(__class__.__name__)
         self.redis = redis.Redis(host=host, port=port, db=database,
                                  decode_responses=decode_responses)
         self.pubsub_name = pubsub_name
@@ -31,7 +29,7 @@ class RedisHelper(metaclass=Log):
         try:
             self.redis.ping()
         except (redis.exceptions.ConnectionError, ConnectionRefusedError) as ex:
-            logging.error(ex)
+            self._log.error(ex)
             raise SystemExit from ex
 
     def get_s(self, key, conv=None):
@@ -41,7 +39,7 @@ class RedisHelper(metaclass=Log):
         except (ValueError, TypeError):
             val = None
         except redis.exceptions.RedisError as ex:
-            logging.error(ex)
+            self._log.error(ex)
             raise SystemExit from ex
         if conv == "string":
             return '' if val is None else str(val)
@@ -52,12 +50,12 @@ class RedisHelper(metaclass=Log):
         try:
             self.redis.set(key, json.dumps(value))
         except redis.exceptions.RedisError as ex:
-            logging.error(ex)
+            self._log.error(ex)
             raise SystemExit from ex
 
     def t_wait_action(self, func, *args, **kwargs):
         """Create and return a thread to wait_message()."""
-        logging.debug("Creating wait_action thread")
+        self._log.debug("Creating wait_action thread")
         thread = threading.Thread(target=self.wait_action,
                                   args=(func, *args), kwargs=kwargs)
         thread.daemon = True
@@ -65,19 +63,19 @@ class RedisHelper(metaclass=Log):
 
     def wait_action(self, func, *args, **kwargs):
         """Wait for messages and run user provided function in thread."""
-        logging.debug("Waiting for messages (actions)")
+        self._log.debug("Waiting for messages (actions)")
         try:
             pubsub = self.redis.pubsub(ignore_subscribe_messages=True)
             pubsub.subscribe(self.pubsub_action_name)
         except redis.exceptions.RedisError as ex:
-            logging.error("Could not subscribe to %s: %s",
+            self._log.error("Could not subscribe to %s: %s",
                            self.pubsub_action_name, ex)
             raise SystemExit from ex
         try:
             while True:
                 message = pubsub.get_message(timeout=1)
                 if message:
-                    logging.debug("received message '%s' ; action is '%s'",
+                    self._log.debug("received message '%s' ; action is '%s'",
                                   message, message["data"].decode())
                     kwargs["action"] = message["data"].decode()
                     thread = threading.Thread(target=func, args=args,
@@ -101,7 +99,7 @@ class RedisHelper(metaclass=Log):
             for _try in range(wait_set_tries):
                 if self.get_s(f"{self.pubsub_name}:last_alive") == time_now:
                     return
-                logging.debug("%s:last_alive isn't updated yet - try # %d/%d",
+                self._log.debug("%s:last_alive isn't updated yet - try # %d/%d",
                                self.pubsub_name, _try, wait_set_tries)
                 time.sleep(0.1)
             raise Exception(
@@ -113,16 +111,16 @@ class RedisHelper(metaclass=Log):
         last_alive = self.get_s(f"{pubsub_name}:last_alive")
 
         if last_alive is None:
-            logging.error("no '%s:last_alive' key", pubsub_name)
+            self._log.error("no '%s:last_alive' key", pubsub_name)
             return False
 
         try:
             if time.time() - float(last_alive) < max_age:
                 return True
         except TypeError:
-            logging.error("'%s:last_alive' isn't a float", pubsub_name)
+            self._log.error("'%s:last_alive' isn't a float", pubsub_name)
         else:
-            logging.debug("%s hasn't updated redis in %s seconds",
+            self._log.debug("%s hasn't updated redis in %s seconds",
                           pubsub_name, max_age)
 
         return False
@@ -140,23 +138,23 @@ class RedisHelper(metaclass=Log):
 
     def publish_event(self, event_data):
         """Publish (send) an event."""
-        logging.debug("publishing event '%s:%s'", self.pubsub_event_name,
+        self._log.debug("publishing event '%s:%s'", self.pubsub_event_name,
                       event_data)
         try:
             self.redis.publish(self.pubsub_event_name, event_data)
         except redis.exceptions.RedisError as ex:
-            logging.error("Could not publish event '%s:%s': %s",
+            self._log.error("Could not publish event '%s:%s': %s",
                            self.pubsub_event_name, event_data, ex)
             raise SystemExit from ex
 
     def send_action(self, dest, action):
         """Publish (send) an action."""
         pubsub_action_name = f"{dest}:ACTION"
-        logging.debug("publishing (sending) action '%s:%s'",
+        self._log.debug("publishing (sending) action '%s:%s'",
                        pubsub_action_name, action)
         try:
             self.redis.publish(pubsub_action_name, action)
         except redis.exceptions.RedisError as ex:
-            logging.error("Could not send action '%s:%s': %s",
+            self._log.error("Could not send action '%s:%s': %s",
                            pubsub_action_name, action, ex)
             raise SystemExit from ex

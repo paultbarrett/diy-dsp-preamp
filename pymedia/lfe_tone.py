@@ -4,13 +4,13 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
-import logging
 import time
 import subprocess
 import os
 
 import pymedia_redis
-from pymedia_utils import logging, Log, SimpleThreads
+import pymedia_logger
+from pymedia_utils import SimpleThreads
 from pymedia_cdsp import redis_cdsp_ping
 
 from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
@@ -62,8 +62,9 @@ LFE_TONE_PLAY_INTERVAL = 240
 LFE_TONE_PLAY_LOOP_INTERVAL = 10 # seconds
 
 # ---------------------
-class LfeTone(metaclass=Log):
+class LfeTone():
     def __init__(self, _redis):
+        self._log = pymedia_logger.get_logger(__class__.__name__)
         self._redis = _redis
         self._playing_lfe_tone = False
         self._last_played_lfe_tone = self._redis.get_s("LFE_TONE:last_played")
@@ -73,7 +74,7 @@ class LfeTone(metaclass=Log):
         self.threads.add_target(self.loop_play)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
 
-    def action(self, *args, action="", **kwargs):
+    def action(self, action=""):
         """Run user actions.
 
         This function is usually called by a loop waiting for user actions
@@ -84,13 +85,13 @@ class LfeTone(metaclass=Log):
         elif action == "play_skip_tests":
             self.play(skip_tests = True)
         else:
-            logging.warning("action '%s' isn't defined", action)
+            self._log.warning("action '%s' isn't defined", action)
 
     def loop_play(self):
         """Regularly run self.play() to play a lfe tone."""
         while True:
             reltime_last_played = time.time() - self._last_played_lfe_tone
-            logging.debug("last tone played %ds ago ; interval: %ds",
+            self._log.debug("last tone played %ds ago ; interval: %ds",
                            reltime_last_played, LFE_TONE_PLAY_INTERVAL)
             if reltime_last_played > LFE_TONE_PLAY_INTERVAL:
                 self.play()
@@ -99,50 +100,50 @@ class LfeTone(metaclass=Log):
     def play(self, skip_tests = False):
         """Play a lfe tone."""
         # pylint: disable=too-many-return-statements
-        logging.debug("playing LFE tone")
+        self._log.debug("playing LFE tone")
 
         # mandatory tests
         if time.time() - self._last_played_lfe_tone < LFE_TONE_PLAY_INTERVAL:
-            logging.debug("already played a tone within %d seconds - noop",
+            self._log.debug("already played a tone within %d seconds - noop",
                            LFE_TONE_PLAY_INTERVAL)
             return
 
         if self._playing_lfe_tone:
-            logging.info("already playing lfe tones - noop")
+            self._log.info("already playing lfe tones - noop")
             return
 
         # avoid keeping the subwoofer on when not needed
         if not skip_tests:
 
             if not redis_cdsp_ping(self._redis, max_age=10):
-                logging.debug("cdsp isn't on - noop")
+                self._log.debug("cdsp isn't on - noop")
                 return
 
             if self._redis.get_s("CDSP:mute"):
-                logging.debug("cdsp is muted - noop")
+                self._log.debug("cdsp is muted - noop")
                 return
 
             if (self._redis.get_s("CDSP:control_player")
                 and not self._redis.get_s("PLAYER:isplaying")):
-                logging.debug("cdsp controls player and player is paused - noop")
+                self._log.debug("cdsp controls player and player is paused - noop")
                 return
 
         # get current config index
         cdsp_config_index = self._redis.get_s("CDSP:config_index")
         if cdsp_config_index == "":
-            logging.error("Couldn't get cdsp config index")
+            self._log.error("Couldn't get cdsp config index")
             return
 
         # get corresponding tone
         try:
             lfe = LFE_TONE_DEFS[int(cdsp_config_index)]
         except KeyError as ex:
-            logging.error("No index %s found in LFE_TONE_DEFS: %s",
+            self._log.error("No index %s found in LFE_TONE_DEFS: %s",
                            cdsp_config_index, ex)
             return
 
         # finally, try to play the tone
-        logging.info("start playing lfe tone %s for config index %s on %s",
+        self._log.info("start playing lfe tone %s for config index %s on %s",
                        lfe['file'], cdsp_config_index, lfe['device'])
 
         self._playing_lfe_tone = True
@@ -150,16 +151,16 @@ class LfeTone(metaclass=Log):
             sub = subprocess.run(['aplay', '-D', lfe['device'], lfe['file'] ],
                             check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as ex:
-            logging.error("Error: %s / cmd: %s / stderr: %s", ex, ex.cmd,
+            self._log.error("Error: %s / cmd: %s / stderr: %s", ex, ex.cmd,
                            ex.stderr)
         except FileNotFoundError as ex:
-            logging.error(ex)
+            self._log.error(ex)
         else:
             self._last_played_lfe_tone = time.time()
-            logging.debug("command stdout: %s", sub.stdout)
-            logging.debug("command stderr: %s", sub.stderr)
+            self._log.debug("command stdout: %s", sub.stdout)
+            self._log.debug("command stderr: %s", sub.stderr)
             self._redis.set_s("LFE_TONE:last_played", self._last_played_lfe_tone)
-            logging.info("stopped playing tone")
+            self._log.info("stopped playing tone")
 
         self._playing_lfe_tone = False
 

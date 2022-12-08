@@ -8,15 +8,17 @@ import time
 import requests
 import lmsquery
 
-from pymedia_utils import logging, Log, SimpleThreads
+import pymedia_logger
+from pymedia_utils import SimpleThreads
 from pymedia_cdsp import redis_cdsp_ping
 
 # ---------------------
 
 # https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md
 
-class Lms(metaclass=Log):
+class Lms():
     def __init__(self, server, playerid, _redis, update_interval=4):
+        self._log = pymedia_logger.get_logger(__class__.__name__)
         self._server = server
         self._lmsquery = lmsquery.LMSQuery(server)
         self._playerid = playerid
@@ -52,18 +54,18 @@ class Lms(metaclass=Log):
         published (sent) via redis.
         """
         if not self._lmsquery:
-            logging.info("lms query isn't defined; player not running ?")
+            self._log.info("lms query isn't defined; player not running ?")
             return
 
         if "volume_perc:" in action:
             try:
                 vol_perc = float(action.split('volume_perc:')[1])
             except ValueError as ex:
-                logging.error(ex)
+                self._log.error(ex)
                 return
 
             if not 0 <= vol_perc <= 100:
-                logging.error("Volume is outside range: %d", vol_perc)
+                self._log.error("Volume is outside range: %d", vol_perc)
                 return
 
             func_action = self._lmsquery.set_volume
@@ -87,15 +89,15 @@ class Lms(metaclass=Log):
                     }.get(action, [None, None])
 
         if not func_action:
-            logging.warning("action '%s' isn't defined", action)
+            self._log.warning("action '%s' isn't defined", action)
             return
 
-        logging.info("'%s'", action)
+        self._log.info("'%s'", action)
 
         try:
             func_action(self._playerid, *func_action_args)
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            logging.warning(ex)
+            self._log.warning(ex)
             return
 
         self.update()
@@ -103,13 +105,13 @@ class Lms(metaclass=Log):
 
     def update(self):
         """Update stats and update redis if they've changed."""
-        logging.debug("updating info")
+        self._log.debug("updating info")
 
         self._redis.set_alive()
 
         if not redis_cdsp_ping(self._redis, max_age=10):
             # no use to refresh stuff if cdsp isn't on
-            logging.debug("CDSP isn't running - won't refresh")
+            self._log.debug("CDSP isn't running - won't refresh")
             return
 
         prev_stats = self._stats.copy()
@@ -119,13 +121,13 @@ class Lms(metaclass=Log):
             player = next((item for item in self._lmsquery.get_players()
                            if item["playerid"] == self._playerid), None)
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            logging.debug("Connection error: %s", ex)
+            self._log.debug("Connection error: %s", ex)
             return
 
         if not player:
             # debug loglevel to avoid flooding logs when the player - eg.
             # squeezelite isn't running
-            logging.debug("Player not found")
+            self._log.debug("Player not found")
             return
 
         try:
@@ -141,10 +143,10 @@ class Lms(metaclass=Log):
                 self._stats['title'] = (
                         self._lmsquery.get_current_title(self._playerid))
         except KeyError as ex:
-            logging.error(ex)
+            self._log.error(ex)
             return
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
-            logging.debug("Connection error: %s", ex)
+            self._log.debug("Connection error: %s", ex)
             return
 
         # update redis even if stats haven't changed; it fixes rare corner case
@@ -152,6 +154,6 @@ class Lms(metaclass=Log):
         self._redis.update_stats(self._stats)
 
         if prev_stats != self._stats:
-            logging.debug("stats have changed - updating redis")
-            logging.debug(self._stats)
+            self._log.debug("stats have changed - updating redis")
+            self._log.debug(self._stats)
             self._redis.publish_event("stats")
