@@ -333,7 +333,7 @@ class CDsp(metaclass=Log):
             # immediate user feedback as read/validates takes a bit of time
             self._switching_config = True
             self._redis.set_s("CDSP:switching_config", True)
-            self._redis.publish_event("next_config")
+            self._redis.publish_event("change config")
 
             if self._cfg.get('config_mute_on_change'):
                 self.mute(mode="mute")
