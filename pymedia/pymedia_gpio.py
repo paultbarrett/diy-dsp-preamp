@@ -18,7 +18,7 @@ HELD_TIME = 2
 
 # ----------------
 
-class GpioDigitalInputPin(metaclass=Log):
+class DigitalInputPin(metaclass=Log):
 
     def __init__(self,
                  gpiochip,
@@ -41,6 +41,8 @@ class GpioDigitalInputPin(metaclass=Log):
         handler.setFormatter(formatter)
         self._log.handlers = []    # logger.propagate = False
         self._log.addHandler(handler)
+
+        logging.debug("Initializing")
 
         if not cb_pressed and not cb_held:
             raise Exception("no pressed/held callback defined !")
@@ -178,8 +180,9 @@ class GpioDigitalInputPin(metaclass=Log):
                 cb_held_thread.start()
 
 
-class GpioOutputPin(metaclass=Log):
+class DigitalOutputPin(metaclass=Log):
     def __init__(self, gpiochip, pin, default_value=0):
+        logging.debug("Initializing %s:%s", gpiochip.name(), pin)
         try:
             if gpiochip is None:
                 logging.error("gpiochip not found")

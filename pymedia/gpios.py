@@ -9,7 +9,7 @@ from time import sleep
 import gpiod
 
 import pymedia_redis
-import pymedia_gpio
+from pymedia_gpio import DigitalInputPin, DigitalOutputPin
 from pymedia_utils import SimpleThreads
 from pymedia_cdsp import redis_cdsp_ping
 
@@ -51,22 +51,22 @@ if __name__ == '__main__':
     threads = SimpleThreads()
 
     # rear panel led
-    panel_led = pymedia_gpio.GpioOutputPin(gpiochip0, 17)
+    panel_led = DigitalOutputPin(gpiochip0, 17)
     threads.add_target(manage_status_led, panel_led, _redis)
 
     # front panel push button
-    panel_push_btn = pymedia_gpio.GpioInputPin(
+    panel_push_btn = DigitalInputPin(
             gpiochip1,
             23,
             cb_pressed=_redis.send_action,
-            cb_pressed_args=(_redis, "CDSP", "next_config"),
+            cb_pressed_args=("CDSP", "next_config"),
             cb_held=_redis.send_action,
-            cb_held_args=(_redis, "CDSP", "first_config"),
+            cb_held_args=("CDSP", "first_config"),
             )
     threads.add_thread(panel_push_btn.th_wait)
 
     # rotary encoder push button
-    encoder_push_btn = pymedia_gpio.GpioInputPin(
+    encoder_push_btn = DigitalInputPin(
             gpiochip2,
             4,
             cb_pressed=_redis.send_action,
