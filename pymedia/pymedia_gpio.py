@@ -18,7 +18,7 @@ HELD_TIME = 2
 
 # ----------------
 
-class GpioInputPin(metaclass=Log):
+class GpioDigitalInputPin(metaclass=Log):
 
     def __init__(self,
                  gpiochip,
