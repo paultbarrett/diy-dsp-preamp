@@ -201,6 +201,14 @@ class GpioOutputPin(metaclass=Log):
             logging.error("Error: %s", ex)
             raise SystemExit from ex
 
+    def get_value(self):
+        """Get current output value."""
+        try:
+            return self._line.get_value()
+        except Exception as ex:
+            logging.error("Error: %s", ex)
+            raise SystemExit from ex
+
     def blink(self, interval=1):
         """Blink output (blocking function)."""
         while True:
