@@ -27,8 +27,14 @@ DISPLAY_BG_COLOR = 0
 DISPLAY_FG_COLOR = 255
 DISPLAY_CONTRAST = 0
 DISPLAY_FONT_SMALL = 'DejaVuSansMono.ttf'
+DISPLAY_FONT_MEDIUM = DISPLAY_FONT_SMALL
 DISPLAY_FONT_LARGE = DISPLAY_FONT_SMALL
 DISPLAY_FONT_SYMBOLS = DISPLAY_FONT_SMALL
+# font size != font height; use print_font_sizes.py to find sizes
+DISPLAY_FONT_SMALL_SIZE = 14
+DISPLAY_FONT_MEDIUM_SIZE = 32
+DISPLAY_FONT_LARGE_SIZE = 62
+DISPLAY_FONT_SYMBOLS_SIZE = 20
 DISPLAY_X_OFFSET = 8
 DISPLAY_LINE_SPACING = 2
 DISPLAY_VOLUME_UNIT = "dB"
@@ -62,10 +68,14 @@ class Display(metaclass=Log):
         try:
             # Load default font.
             #self._font_small = ImageFont.load_default()
-            # font size != font height; use print_font_sizes.py to find sizes
-            self._font_small = ImageFont.truetype(DISPLAY_FONT_SMALL, 14)
-            self._font_symbols = ImageFont.truetype(DISPLAY_FONT_SYMBOLS, 20)
-            self._font_large = ImageFont.truetype(DISPLAY_FONT_LARGE, 62)
+            self._font_small = ImageFont.truetype(DISPLAY_FONT_SMALL,
+                    DISPLAY_FONT_SMALL_SIZE)
+            self._font_medium = ImageFont.truetype(DISPLAY_FONT_MEDIUM,
+                    DISPLAY_FONT_MEDIUM_SIZE)
+            self._font_large = ImageFont.truetype(DISPLAY_FONT_LARGE,
+                    DISPLAY_FONT_LARGE_SIZE)
+            self._font_symbols = ImageFont.truetype(DISPLAY_FONT_SYMBOLS,
+                    DISPLAY_FONT_SYMBOLS_SIZE)
         except FileNotFoundError as ex:
             logging.error("missing font file in path (default: font5x8.bin)")
             raise SystemExit from ex
