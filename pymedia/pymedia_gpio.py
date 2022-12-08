@@ -179,13 +179,14 @@ class GpioInputPin(metaclass=Log):
 
 
 class GpioOutputPin(metaclass=Log):
-    def __init__(self, gpiochip, pin):
+    def __init__(self, gpiochip, pin, default_value=0):
         try:
             if gpiochip is None:
                 logging.error("gpiochip not found")
                 raise SystemExit
             self._line = gpiochip.get_line(pin)
-            self._line.request(consumer="pymedia", type=gpiod.LINE_REQ_DIR_OUT)
+            self._line.request(consumer="pymedia", type=gpiod.LINE_REQ_DIR_OUT,
+                               default_val=default_value)
         except Exception as ex:
             logging.error("Error: %s", ex)
             raise SystemExit from ex
