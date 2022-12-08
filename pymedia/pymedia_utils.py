@@ -11,6 +11,7 @@ import time
 
 # Logging
 LOGFORMAT = "%(levelname)s %(name)s %(funcName)s() %(message)s"
+LOGFORMAT_DATE = "%H:%M:%S"
 
 # add timestamp if not called from systemd (see pymedia@.service)
 if 'FROM_SYSTEMD' not in os.environ and os.environ.get('FROM_SYSTEMD') != "1":
@@ -19,7 +20,7 @@ if 'FROM_SYSTEMD' not in os.environ and os.environ.get('FROM_SYSTEMD') != "1":
 logging.basicConfig(
         level=os.environ.get('LOGLEVEL', 'INFO').upper(),
         format=LOGFORMAT,
-        datefmt="%H:%M:%S"
+        datefmt=LOGFORMAT_DATE,
         )
 
 # https://stackoverflow.com/questions/29069655/python-logging-with-a-common-logger-class-mixin-and-class-inheritance
