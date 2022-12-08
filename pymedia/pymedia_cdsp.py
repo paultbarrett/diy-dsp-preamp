@@ -168,6 +168,8 @@ class CDsp(metaclass=Log):
 
                     "unmute": [self.mute, ("unmute",)],
 
+                    "first_config": [self.load_config, (0,)],
+
                     "next_config": [self.load_next_config, ()],
 
                     }.get(action, [None, None])
@@ -296,8 +298,12 @@ class CDsp(metaclass=Log):
             self._redis.publish_event("volume")
 
     def load_next_config(self):
-        """Load next config in _cfg['configs'][]."""
         logging.info("Next config")
+        index = (self._config_index + 1 ) % len(self._cfg['configs'])
+        self.load_config(index)
+
+    def load_config(self, index):
+        """Load config in _cfg['configs'][]."""
         if not self._cfg.get('configs'):
             logging.error("Trying to load next config but not config defined")
             return
@@ -308,11 +314,15 @@ class CDsp(metaclass=Log):
             logging.info("A 'next config' task is already running - wait")
             time.sleep(0.5)
 
-        self._switching_config = True
+        try:
+            config_path = (self._cfg.get('config_path') +
+                           "/" + self._cfg['configs'][index])
+        except IndexError:
+            logging.warning("Couldn't find user configuration for index %s",
+                            index)
+            return
 
-        index = (self._config_index + 1 ) % len(self._cfg['configs'])
-        config_path = (self._cfg.get('config_path') +
-                       "/" + self._cfg['configs'][index])
+        self._switching_config = True
 
         if index == self._config_index:
             logging.info("Index hasn't changed - won't do anything")
@@ -397,7 +407,7 @@ class CDsp(metaclass=Log):
                             os.path.basename(cur_config_path)
                             )
                     #logging.debug("Found index is %d", index)
-                except ValueError:
+                except (IndexError, ValueError):
                     logging.warning("Couldn't find active configuration (%s)"
                                       " in user configuration (%s)",
                                      cur_config_path, self._cfg['configs'])

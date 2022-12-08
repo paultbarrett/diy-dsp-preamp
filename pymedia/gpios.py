@@ -21,6 +21,10 @@ def next_source(_redis):
     """Send (publish) a "next configuration action" for CamillaDSP."""
     _redis.send_action('CDSP', "next_config")
 
+def first_source(_redis):
+    """Send (publish) a "first configuration action" for CamillaDSP."""
+    _redis.send_action('CDSP', "first_config")
+
 def mute(_redis):
     """Send (publish) a "toggle mute action" for CamillaDSP."""
     _redis.send_action('CDSP', "toggle_mute")
@@ -49,27 +53,38 @@ def manage_status_led(o_pin, _redis):
 
 if __name__ == '__main__':
 
-    redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
+    _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                       'GPIOS')
 
     gpiochip0 = gpiod.Chip("gpiochip0")
     gpiochip1 = gpiod.Chip("gpiochip1")
     gpiochip2 = gpiod.Chip("gpiochip2")
 
-    panel_led = pymedia_gpio.GpioOutputPin(gpiochip0, 17)
-
     threads = SimpleThreads()
 
     # rear panel led
-    threads.add_target(manage_status_led, panel_led, redis)
+    panel_led = pymedia_gpio.GpioOutputPin(gpiochip0, 17)
+    threads.add_target(manage_status_led, panel_led, _redis)
 
     # front panel push button
-    threads.add_target(pymedia_gpio.wait_input_pin, gpiochip1, 23,
-                       callback=next_source, cb_args=(redis,))
+    panel_push_btn = pymedia_gpio.GpioInputPin(
+            gpiochip1,
+            23,
+            cb_pressed=next_source,
+            cb_pressed_args=(_redis,),
+            cb_held=first_source,
+            cb_held_args=(_redis,),
+            )
+    threads.add_thread(panel_push_btn.th_wait)
 
     # rotary encoder push button
-    threads.add_target(pymedia_gpio.wait_input_pin, gpiochip2, 4, callback=mute,
-                       cb_args=(redis,))
+    encoder_push_btn = pymedia_gpio.GpioInputPin(
+            gpiochip2,
+            4,
+            cb_pressed=mute,
+            cb_pressed_args=(_redis,),
+            )
+    threads.add_thread(encoder_push_btn.th_wait)
 
     threads.start()
 
