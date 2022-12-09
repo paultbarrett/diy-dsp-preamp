@@ -11,21 +11,17 @@ _LOG_FORMAT = ("[%(levelname)s] %(name)s:"
 _LOG_DATE_FORMAT = "%H:%M:%S"
 
 _LOG_LEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+_LOG_FILE = os.environ.get("LOGFILE", None)
 
 # add timestamp if not called from systemd (see pymedia@.service)
 if 'FROM_SYSTEMD' not in os.environ and os.environ.get('FROM_SYSTEMD') != "1":
     _LOG_FORMAT = f"%(asctime)s,%(msecs)d %(filename)s {_LOG_FORMAT}"
 
-#logging.basicConfig(
-#    level=_LOG_LEVEL,
-#    format=_LOG_FORMAT,
-#    datefmt=_date_format,
-#)
-
 def get_file_handler():
-    file_handler = logging.FileHandler("x.log")
-    file_handler.setLevel(logging.WARNING)
-    file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+    file_handler = logging.FileHandler(_LOG_FILE)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(_LOG_FORMAT,
+                                                datefmt=_LOG_DATE_FORMAT))
     return file_handler
 
 def get_stream_handler():
@@ -38,7 +34,9 @@ def get_stream_handler():
 def get_logger(name, custom_field=""):
     logger = logging.getLogger(name)
     logger.setLevel(_LOG_LEVEL)
-    #logger.addHandler(get_file_handler())
+    logger.handlers = []    # 'logger.propagate = False' doesn't work
+    if _LOG_FILE:
+        logger.addHandler(get_file_handler())
     logger.addHandler(get_stream_handler())
     logger = logging.LoggerAdapter(logger, {"custom": custom_field})
     return logger

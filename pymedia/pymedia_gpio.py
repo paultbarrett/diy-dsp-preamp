@@ -23,6 +23,7 @@ class DigitalInputPin():
     def __init__(self,
                  gpiochip,
                  pin,
+                 pullup=False,
                  cb_pressed=None,
                  cb_pressed_args=(),
                  cb_held=None,
@@ -35,7 +36,7 @@ class DigitalInputPin():
         self._log = pymedia_logger.get_logger(__class__.__name__,
                                               f"[{gpiochip.name()}:{pin}]")
 
-        self._log.debug("Initializing")
+        self._log.debug("Initializing - Pull-Up:%s", pullup)
 
         if not cb_pressed and not cb_held:
             raise Exception("no pressed/held callback defined !")
@@ -50,6 +51,9 @@ class DigitalInputPin():
         except Exception as ex:
             self._log.error("Error: %s", ex)
             raise SystemExit from ex
+
+        self._pullup = pullup
+        self._value_activated = 0 if pullup else 1
 
         self._cb_pressed = cb_pressed
         self._cb_pressed_args = cb_pressed_args
@@ -69,14 +73,19 @@ class DigitalInputPin():
         self._label = f"{gpiochip.name()}:{pin}"
 
     def get_value(self):
-        return self._line.get_value()
+        """Get current input value."""
+        try:
+            return self._line.get_value()
+        except Exception as ex:
+            self._log.error("Error: %s", ex)
+            raise SystemExit from ex
 
     def _run_cb_held_timer(self):
         self._cb_held_complete = False
         cancel = self._cb_held_thread_ev.wait(self._held_time)
         # run callback if the task wasn't "cancelled" ; the input shouldn't be
-        # released by the time the timer expires (0: button is pressed)
-        if self.get_value() == 0 and not cancel:
+        # released by the time the timer expires
+        if self.get_value() == self._value_activated and not cancel:
             self._cb_held_complete = True
             self._cb_held(*self._cb_held_args)
         else:
@@ -106,11 +115,11 @@ class DigitalInputPin():
             # -> RISING_EDGE: the input was deactivated (ie. button released)
 
             if event.type == gpiod.LineEvent.FALLING_EDGE:
-                self._log.debug("Falling edge - value is True")
-                pressed = True
+                activated = True if self._pullup else False
+                self._log.debug("Falling Edge - value is %s", activated)
             elif event.type == gpiod.LineEvent.RISING_EDGE:
-                self._log.debug("Rising Edge - value is False")
-                pressed = False
+                activated = False if self._pullup else True
+                self._log.debug("Rising Edge - value is %s", activated)
             else:
                 raise TypeError('Invalid event type')
 
@@ -123,8 +132,7 @@ class DigitalInputPin():
             last_event = event.type
 
             if time.time() - last_valid_event_time < debounce_delay:
-                self._log.debug("button event %s edge within %ss - ignoring",
-                             "Falling" if pressed else "Rising",
+                self._log.debug("button event within %ss - ignoring",
                              debounce_delay)
                 continue
             last_valid_event_time = time.time()
@@ -132,7 +140,7 @@ class DigitalInputPin():
             run_cb_pressed = False
             run_cb_held = False
 
-            if pressed:
+            if activated:
                 self._log.debug("input activated %s", self._label)
                 if self._cb_held:
                     if cb_held_thread and cb_held_thread.is_alive():
