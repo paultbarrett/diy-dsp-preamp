@@ -78,6 +78,8 @@ class DigitalInputPinEvent(Gpio):
         super().__init__(gpiochip, pin, gpiod.LINE_REQ_EV_BOTH_EDGES, consumer,
                          pullup=pullup)
 
+        self._log = pymedia_logger.get_logger(__class__.__name__,
+                                              f"[{gpiochip.name()}:{pin}]")
         if not cb_pressed and not cb_held:
             raise Exception("no pressed/held callback defined !")
 
@@ -202,6 +204,9 @@ class DigitalOutputPin(Gpio):
                  consumer="pymedia"):
         super().__init__(gpiochip, pin, gpiod.LINE_REQ_DIR_OUT, consumer,
                          default_value=default_value)
+
+        self._log = pymedia_logger.get_logger(__class__.__name__,
+                                              f"[{gpiochip.name()}:{pin}]")
 
     def set_value(self, value):
         """Set digital output."""
