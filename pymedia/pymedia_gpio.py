@@ -6,9 +6,7 @@
 
 import time
 import threading
-
 import gpiod
-
 import pymedia_logger
 
 # ---------------------
@@ -18,7 +16,7 @@ HELD_TIME = 2
 
 # ----------------
 
-class DigitalInputPin():
+class DigitalInputPinEvent():
 
     def __init__(self,
                  gpiochip,
