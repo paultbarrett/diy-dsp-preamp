@@ -16,8 +16,53 @@ HELD_TIME = 2
 
 # ----------------
 
-class DigitalInputPinEvent():
+class Gpio():
+    """Generic libgpiod class."""
+    def __init__(self,
+                 gpiochip,
+                 pin,
+                 gpio_type,
+                 consumer,
+                 default_value=0,
+                 pullup=False,
+                 ):
+        self._log = pymedia_logger.get_logger(__class__.__name__,
+                                              f"[{gpiochip.name()}:{pin}]")
+        self._log.debug("Initializing")
 
+        try:
+            self._line = gpiochip.get_line(pin)
+
+            if gpio_type == gpiod.LINE_REQ_DIR_OUT:
+                self._line.request(consumer=consumer, type=gpio_type,
+                                   default_val=default_value)
+            else:
+                self._line.request(consumer=consumer, type=gpio_type)
+                if default_value:
+                    self._log.warning("Not setting default_val for inputs")
+
+            self._line.get_value()  # make sure this works
+        except Exception as ex:
+            self._log.error(ex)
+            raise SystemExit from ex
+
+        self._pullup = pullup
+
+    def get_value(self):
+        """Get current value, unmodified."""
+        try:
+            return self._line.get_value()
+        except Exception as ex:
+            self._log.error(ex)
+            raise SystemExit from ex
+
+    def get_bool_state(self):
+        """Get current digital state (boolean), inversed if pullup=True."""
+        return bool(self.get_value()) ^ self._pullup
+
+
+class DigitalInputPinEvent(Gpio):
+    """Event/interrupt based digital input class."""
     def __init__(self,
                  gpiochip,
                  pin,
@@ -26,39 +71,21 @@ class DigitalInputPinEvent():
                  cb_pressed_args=(),
                  cb_held=None,
                  cb_held_args=(),
-                 threaded_callback=False,
                  debounce_delay=DEBOUNCE_DELAY,
                  held_time=HELD_TIME,
+                 consumer="pymedia"
                  ):
-
-        self._log = pymedia_logger.get_logger(__class__.__name__,
-                                              f"[{gpiochip.name()}:{pin}]")
-
-        self._log.debug("Initializing - Pull-Up:%s", pullup)
+        super().__init__(gpiochip, pin, gpiod.LINE_REQ_EV_BOTH_EDGES, consumer,
+                         pullup=pullup)
 
         if not cb_pressed and not cb_held:
             raise Exception("no pressed/held callback defined !")
-
-        try:
-            if gpiochip is None:
-                self._log.error("gpiochip not found")
-                raise SystemExit
-            self._line = gpiochip.get_line(pin)
-            self._line.request(consumer="wait_events",
-                               type=gpiod.LINE_REQ_EV_BOTH_EDGES)
-        except Exception as ex:
-            self._log.error("Error: %s", ex)
-            raise SystemExit from ex
-
-        self._pullup = pullup
-        self._value_activated = 0 if pullup else 1
 
         self._cb_pressed = cb_pressed
         self._cb_pressed_args = cb_pressed_args
         self._cb_held = cb_held
         self._cb_held_args = cb_held_args
 
-        self._threaded_callback = threaded_callback
         self._held_time = held_time
 
         self.th_wait = threading.Thread(target=self._wait_input,
@@ -68,22 +95,14 @@ class DigitalInputPinEvent():
 
         self._cb_held_complete = False
 
-        self._label = f"{gpiochip.name()}:{pin}"
-
-    def get_value(self):
-        """Get current input value."""
-        try:
-            return self._line.get_value()
-        except Exception as ex:
-            self._log.error("Error: %s", ex)
-            raise SystemExit from ex
-
     def _run_cb_held_timer(self):
+        """Start a "input held" callback timer."""
         self._cb_held_complete = False
         cancel = self._cb_held_thread_ev.wait(self._held_time)
         # run callback if the task wasn't "cancelled" ; the input shouldn't be
         # released by the time the timer expires
-        if self.get_value() == self._value_activated and not cancel:
+        if self.get_bool_state() and not cancel:
+            self._log.debug("running callback_held")
             self._cb_held_complete = True
             self._cb_held(*self._cb_held_args)
         else:
@@ -91,7 +110,7 @@ class DigitalInputPinEvent():
                           " cancelled - won't run callback")
 
     def _wait_input(self, debounce_delay):
-        """Loop / run callback on pin change (interrupt based).
+        """Loop / run callbacks on pin change (interrupt based).
 
         Blocking - should be run in a thread.
         """
@@ -108,16 +127,14 @@ class DigitalInputPinEvent():
 
             event = self._line.event_read()
 
-            # with a pull up, at rest a gpio's value is 1
-            # -> FALLING_EDGE: the input was activated (ie. button pressed)
-            # -> RISING_EDGE: the input was deactivated (ie. button released)
-
+            # with a pull down, falling edge->0, rising->1 (ie. '0' at rest)
+            # values are reversed with a pull up (ie. '1' at rest)
             if event.type == gpiod.LineEvent.FALLING_EDGE:
-                activated = True if self._pullup else False
-                self._log.debug("Falling Edge - value is %s", activated)
+                activated = False ^ self._pullup
+                self._log.debug("Falling Edge")
             elif event.type == gpiod.LineEvent.RISING_EDGE:
-                activated = False if self._pullup else True
-                self._log.debug("Rising Edge - value is %s", activated)
+                activated = True ^ self._pullup
+                self._log.debug("Rising Edge")
             else:
                 raise TypeError('Invalid event type')
 
@@ -125,7 +142,7 @@ class DigitalInputPinEvent():
             # (eg. "Falling edge" then "Falling edge" again) yet this often
             # happens. HW or SW bug ?
             if last_event == event.type:
-                self._log.debug("Last event type was identical - skipping")
+                self._log.debug("Last event type was repeated - skipping")
                 continue
             last_event = event.type
 
@@ -139,7 +156,7 @@ class DigitalInputPinEvent():
             run_cb_held = False
 
             if activated:
-                self._log.debug("input activated %s", self._label)
+                self._log.debug("input activated")
                 if self._cb_held:
                     if cb_held_thread and cb_held_thread.is_alive():
                         self._log.debug("cb_held thread already started -"
@@ -150,7 +167,7 @@ class DigitalInputPinEvent():
                     run_cb_pressed = True
 
             else:
-                self._log.debug("input deactivated, %s", self._label)
+                self._log.debug("input deactivated")
                 # cancel a cb_held task if running
                 if self._cb_held:
                     if cb_held_thread and cb_held_thread.is_alive():
@@ -179,40 +196,17 @@ class DigitalInputPinEvent():
                 cb_held_thread.start()
 
 
-class DigitalOutputPin():
-    def __init__(self, gpiochip, pin, default_value=0):
+class DigitalOutputPin(Gpio):
+    """Digital output class."""
+    def __init__(self, gpiochip, pin, default_value=0,
+                 consumer="pymedia"):
+        super().__init__(gpiochip, pin, gpiod.LINE_REQ_DIR_OUT, consumer,
+                         default_value=default_value)
 
-        self._log = pymedia_logger.get_logger(__class__.__name__,
-                                              f"[{gpiochip.name()}:{pin}]")
-
-        self._log.debug("Initializing")
-
+    def set_value(self, value):
+        """Set digital output."""
         try:
-            if gpiochip is None:
-                self._log.error("gpiochip not found")
-                raise SystemExit
-            self._line = gpiochip.get_line(pin)
-            self._line.request(consumer="pymedia", type=gpiod.LINE_REQ_DIR_OUT,
-                               default_val=default_value)
-        except Exception as ex:
-            self._log.error("Error: %s", ex)
-            raise SystemExit from ex
-
-    def set_value(self, level=0):
-        """Set output."""
-        try:
-            if level:
-                self._line.set_value(1)
-            else:
-                self._line.set_value(0)
-        except Exception as ex:
-            self._log.error("Error: %s", ex)
-            raise SystemExit from ex
-
-    def get_value(self):
-        """Get current output value."""
-        try:
-            return self._line.get_value()
+            self._line.set_value(value)
         except Exception as ex:
             self._log.error("Error: %s", ex)
             raise SystemExit from ex
