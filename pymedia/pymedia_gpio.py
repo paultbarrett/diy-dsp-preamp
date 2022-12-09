@@ -16,7 +16,7 @@ HELD_TIME = 2
 
 # ----------------
 
-class Gpio():
+class GpioBase():
     """Generic libgpiod class."""
     def __init__(self,
                  gpiochip,
@@ -61,7 +61,7 @@ class Gpio():
         return bool(self.get_value()) ^ self._pullup
 
 
-class DigitalInputPinEvent(Gpio):
+class DigitalInputPinEvent(GpioBase):
     """Event/interrupt based digital input class."""
     def __init__(self,
                  gpiochip,
@@ -198,7 +198,7 @@ class DigitalInputPinEvent(Gpio):
                 cb_held_thread.start()
 
 
-class DigitalOutputPin(Gpio):
+class DigitalOutputPin(GpioBase):
     """Digital output class."""
     def __init__(self, gpiochip, pin, default_value=0,
                  consumer="pymedia"):
