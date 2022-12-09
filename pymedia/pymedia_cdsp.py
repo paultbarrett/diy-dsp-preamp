@@ -286,10 +286,10 @@ class CDsp():
         self._setting_volume = False
 
         if self._redis:
-            vol_perc = self.db_vol_to_perc_vol(vol)
             self._redis.set_s("CDSP:volume", int(vol))
             # set/sync player volume
             if player_vol_update and self._cfg.get('configs_control_player'):
+                vol_perc = round(self.db_vol_to_perc_vol(vol), 2)
                 try:
                     if self._cfg['configs_control_player'][self._config_index]:
                         self._redis.send_action('PLAYER',
