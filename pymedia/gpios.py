@@ -17,6 +17,10 @@ from pymedia_const import REDIS_SERVER, REDIS_PORT, REDIS_DB
 
 # ----------------
 
+GPIO_PULLUP = True
+
+# ----------------
+
 def manage_status_led(o_pin, _redis):
     """Provide visual feedback of CamillaDSP status.
 
@@ -62,6 +66,7 @@ if __name__ == '__main__':
             cb_pressed_args=("CDSP", "next_config"),
             cb_held=_redis.send_action,
             cb_held_args=("CDSP", "first_config"),
+            pullup=GPIO_PULLUP,
             )
     threads.add_thread(panel_push_btn.th_wait)
 
@@ -71,6 +76,7 @@ if __name__ == '__main__':
             4,
             cb_pressed=_redis.send_action,
             cb_pressed_args=("CDSP", "toggle_mute"),
+            pullup=GPIO_PULLUP,
             )
     threads.add_thread(encoder_push_btn.th_wait)
 
