@@ -82,6 +82,7 @@ class CDsp():
         self._cdsp = CamillaConnection(self._cfg['server'],
                                        self._cfg['port'])
         connect_attempts = 0
+        connected = False
         while True:
             if not self._cdsp.is_connected():
                 try:
@@ -96,10 +97,13 @@ class CDsp():
                         self._redis.set_s("CDSP:is_on", False)
                         # turn off player if we're not connected
                         if (self._redis.check_alive('PLAYER')
-                            and self._redis.get_s("PLAYER:power")):
+                            and self._redis.get_s("PLAYER:power")
+                            and connected):
                             self._redis.send_action('PLAYER', "off")
+                    connected = False
                 else:
                     connect_attempts = 0
+                    connected = True
                     self._log.info("Connected to CamillaDSP on %s:%d"
                                   " - version:%s", self._cfg['server'],
                                    self._cfg['port'],
