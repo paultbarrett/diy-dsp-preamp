@@ -19,7 +19,6 @@ if __name__ == '__main__':
     display = pymedia_display.Display(_redis, pubsubs=(
         'PLAYER:EVENT',
         'CDSP:EVENT',
-        'PLAYER_CHANNEL:EVENT'
         ))
 
     display.t_wait_events.start()
