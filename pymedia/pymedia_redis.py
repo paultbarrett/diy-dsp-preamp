@@ -144,7 +144,7 @@ class RedisHelper():
         if send_data_changed_event:
             self.publish_event("stats")
 
-    def publish_event(self, event_data):
+    def publish_event(self, event_data="foo"):
         """Publish (send) an event."""
         self._log.debug("publishing event '%s:%s'", self.pubsub_event_name,
                       event_data)
