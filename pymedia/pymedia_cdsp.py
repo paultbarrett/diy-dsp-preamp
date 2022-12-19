@@ -275,10 +275,13 @@ class CDsp():
                    if vol > self._cfg['volume_max']
                    else self._cfg['volume_min']
                    )
-        self._log.debug("Setting volume to '%s'", vol)
 
-        if int(self._cdsp_wp("get_volume")) == int(vol):
-            self._log.debug("Current volume already %s", int(vol))
+        vol_i = round(vol)
+        cur_vol = self._cdsp_wp("get_volume")
+        self._log.debug("Setting volume to '%s' (current: %s)", vol, cur_vol)
+
+        if round(cur_vol) == vol_i:
+            self._log.debug("Current volume already %s", round(vol))
             return
 
         # avoid setting volume concurrently (possible as this task is run as
@@ -287,11 +290,11 @@ class CDsp():
             self._log.debug("A volume change task is already running - wait")
             time.sleep(0.5)
         self._setting_volume = True
-        self._cdsp_wp("set_volume", int(vol))
+        self._cdsp_wp("set_volume", vol_i)
         self._setting_volume = False
 
         if self._redis:
-            self._redis.set("volume", int(vol))
+            self._redis.set("volume", vol_i)
             # set/sync player volume
             if player_vol_update and self._cfg.get('configs_control_player'):
                 vol_perc = round(self.db_vol_to_perc_vol(vol), 2)
