@@ -73,6 +73,7 @@ case "$ID_MODEL" in
 		PLAYER_OUTPUT="Loopback0_0_c01"	# defined in .asoundrc
 		#SLITE_OPTS+=(-W -C 5 -r 44100-44100 -R hLE:::28)
 		SLITE_OPTS+=(-r 44100-44100 -R hLE:::28)
+		SLITE_OPTS+=(-O "hw:CARD=Dummy" -V Master)
 		;;
 esac
 
@@ -81,5 +82,5 @@ esac
 
 ## run
 set -x
-exec $SLITE_BIN ${SLITE_OPTS[@]} -o "$PLAYER_OUTPUT" -n "$PLAYER_NAME" -m "$PLAYER_MAC"
+exec $SLITE_BIN -o "$PLAYER_OUTPUT" -n "$PLAYER_NAME" -m "$PLAYER_MAC" ${SLITE_OPTS[@]}
 
