@@ -102,10 +102,12 @@ class RedisHelper():
         wait_set_tries * 0.1s
         """
         time_now = time.time()
-        self.set_s(f"{self.pubsub_name}:last_alive", time_now)
+        self.set("last_alive", time_now)
         if wait_set:
             for _try in range(wait_set_tries):
-                if self.get_s(f"{self.pubsub_name}:last_alive") == time_now:
+                # >= rather than == because another thread may have updated the
+                # key meanwhile
+                if float(self.get("last_alive")) >= time_now:
                     return
                 self._log.debug("%s:last_alive isn't updated yet - try # %d/%d",
                                self.pubsub_name, _try, wait_set_tries)
@@ -116,7 +118,7 @@ class RedisHelper():
 
     def check_alive(self, pubsub_name, max_age=20):
         """Check if a 'last_alive' key was set less than max_age sec. ago."""
-        last_alive = self.get_s(f"{pubsub_name}:last_alive")
+        last_alive = self.get("last_alive")
 
         if last_alive is None:
             self._log.error("no '%s:last_alive' key", pubsub_name)
