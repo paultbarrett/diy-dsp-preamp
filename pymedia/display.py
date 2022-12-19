@@ -16,8 +16,11 @@ if __name__ == '__main__':
     _redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
                                        'DISPLAY')
 
-    display = pymedia_display.Display(_redis, pubsubs=('PLAYER:EVENT',
-                                                       'CDSP:EVENT'))
+    display = pymedia_display.Display(_redis, pubsubs=(
+        'PLAYER:EVENT',
+        'CDSP:EVENT',
+        'PLAYER_CHANNEL:EVENT'
+        ))
 
     display.t_wait_events.start()
 

@@ -21,6 +21,8 @@ LMS_SERVER = "juke"
 LMS_SERVER_PORT = 9090
 LMS_PLAYERID = "13:89:0e:c8:1d:a5"
 
+LMS_SUBSCRIBE = "mixer,playlist,play,pause,stop"
+
 # ---------------------
 
 def cdsp_set_volume(vol, _redis):
@@ -33,7 +35,8 @@ def cdsp_set_volume(vol, _redis):
     logger.info("Action - set CDSP volume to %s", vol)
     _redis.send_action('CDSP', f"volume_perc:{vol}:NO_PLAYER_VOL_UPDATE")
 
-def receive_volume_event(_socket, player_id, callback, cb_args=()):
+def parse_events(_socket, player_id, _redis):
+    """Receive / parse events and trigger actions."""
 
     # sample (we use unquote() to convert %3A to ':'):
     # 13%3A89%3A0e%3Ac8%3A1d%3Aa5 mixer volume 50
@@ -41,21 +44,20 @@ def receive_volume_event(_socket, player_id, callback, cb_args=()):
     # ->
     # 13:89:0e:c8:1d:a5 mixer volume 60
     # 13:89:0e:c8:1d:a5 mixer volume -5
-    regex = re.compile("^" + player_id + r" mixer volume ([+\-]?\d+)$")
-
-    # "subscribe" to LMS volume changes
-    _socket.send("subscribe mixer\r".encode("UTF-8"))
+    re_vol = re.compile("^" + player_id + r" mixer volume ([+\-]?\d+)$")
 
     while True:
         data = _socket.recv(4096)
         line = unquote(data.decode("UTF-8").strip())
         logger.debug("received %s", line)
-        re_match = regex.match(line)
-        if re_match:
-            vol = re_match.group(1)
+        re_vol_match = re_vol.match(line)
+        if re_vol_match:
+            vol = re_vol_match.group(1)
             logger.info("Volume changed to %s for player %s", vol,
                          LMS_PLAYERID)
-            callback(vol, *cb_args)
+            cdsp_set_volume(vol, _redis)
+        else:
+            _redis.publish_event("event")
 
 
 # ---------------------
@@ -63,15 +65,15 @@ def receive_volume_event(_socket, player_id, callback, cb_args=()):
 if __name__ == '__main__':
 
     redis = pymedia_redis.RedisHelper(REDIS_SERVER, REDIS_PORT, REDIS_DB,
-                                      'LMS_VOL')
+                                      'PLAYER_CHANNEL')
 
-    srvsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #srvsock.settimeout(3) # 3 second timeout on commands
-    srvsock.connect((LMS_SERVER, LMS_SERVER_PORT))
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #sock.settimeout(3) # 3 second timeout on commands
+    sock.connect((LMS_SERVER, LMS_SERVER_PORT))
 
     try:
-        receive_volume_event(srvsock, LMS_PLAYERID, cdsp_set_volume,
-                             cb_args=(redis,))
+        sock.send(f"subscribe {LMS_SUBSCRIBE}\r".encode("UTF-8"))
+        parse_events(sock, LMS_PLAYERID, redis)
     except KeyboardInterrupt:
         print("Received KeyboardInterrupt, shutting down...")
-        srvsock.close()
+        sock.close()
