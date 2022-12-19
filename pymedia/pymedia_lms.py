@@ -33,6 +33,7 @@ class Lms():
         self.threads = SimpleThreads()
         self.threads.add_target(self.update_loop, update_interval)
         self.threads.add_thread(self._redis.t_wait_action(self.action))
+        self._updating = False
 
     def is_playing(self):
         """Return player 'isplaying' status."""
@@ -111,11 +112,18 @@ class Lms():
         """Update stats and update redis if they've changed."""
         self._log.debug("updating info")
 
+        if self._updating:
+            self._log.debug("another thread is updating player data - noop")
+            return
+
+        self._updating = True
+
         self._redis.set_alive()
 
         if not redis_cdsp_ping(self._redis, max_age=10):
             # no use to refresh stuff if cdsp isn't on
             self._log.debug("CDSP isn't running - won't refresh")
+            self._updating = False
             return
 
         prev_stats = self._stats.copy()
@@ -126,12 +134,14 @@ class Lms():
                            if item["playerid"] == self._playerid), None)
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
             self._log.debug("Connection error: %s", ex)
+            self._updating = False
             return
 
         if not player:
             # debug loglevel to avoid flooding logs when the player - eg.
             # squeezelite isn't running
             self._log.debug("Player not found")
+            self._updating = False
             return
 
         try:
@@ -148,9 +158,11 @@ class Lms():
                         self._lmsquery.get_current_title(self._playerid))
         except KeyError as ex:
             self._log.error(ex)
+            self._updating = False
             return
         except (requests.Timeout, requests.exceptions.ConnectionError) as ex:
             self._log.debug("Connection error: %s", ex)
+            self._updating = False
             return
 
         # update redis even if stats haven't changed; it fixes rare corner case
@@ -161,3 +173,5 @@ class Lms():
             self._log.debug("stats have changed - updating redis")
             self._log.debug(self._stats)
             self._redis.publish_event("stats")
+
+        self._updating = False
