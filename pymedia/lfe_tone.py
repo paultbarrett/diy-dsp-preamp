@@ -67,7 +67,7 @@ class LfeTone():
         self._log = pymedia_logger.get_logger(__class__.__name__)
         self._redis = _redis
         self._playing_lfe_tone = False
-        self._last_played_lfe_tone = self._redis.get_s("LFE_TONE:last_played")
+        self._last_played_lfe_tone = self._redis.get("last_played")
         if self._last_played_lfe_tone is None:
             self._last_played_lfe_tone = 0
         self.threads = SimpleThreads()
@@ -159,7 +159,7 @@ class LfeTone():
             self._last_played_lfe_tone = time.time()
             self._log.debug("command stdout: %s", sub.stdout)
             self._log.debug("command stderr: %s", sub.stderr)
-            self._redis.set_s("LFE_TONE:last_played", self._last_played_lfe_tone)
+            self._redis.set("last_played", self._last_played_lfe_tone)
             self._log.info("stopped playing tone")
 
         self._playing_lfe_tone = False

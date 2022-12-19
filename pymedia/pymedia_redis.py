@@ -32,8 +32,12 @@ class RedisHelper():
             self._log.error(ex)
             raise SystemExit from ex
 
+    def get(self, key, conv=None):
+        """Read a json encoded redis key for the default pubsub. """
+        return self.get_s(f"{self.pubsub_name}:{key}", conv)
+
     def get_s(self, key, conv=None):
-        """ Read a json encoded redis key."""
+        """Read a json encoded redis key."""
         try:
             val = json.loads(self.redis.get(key))
         except (ValueError, TypeError):
@@ -44,6 +48,10 @@ class RedisHelper():
         if conv == "string":
             return '' if val is None else str(val)
         return val
+
+    def set(self, key, value):
+        """Set a json encoded redis key for the default pubsub. """
+        self.set_s(f"{self.pubsub_name}:{key}", value)
 
     def set_s(self, key, value):
         """Set a json encoded redis key."""

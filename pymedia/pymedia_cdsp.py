@@ -94,7 +94,7 @@ class CDsp():
                         self._log.info("Couldn't connect to CamillaDSP")
                     connect_attempts += 1
                     if self._redis:
-                        self._redis.set_s("CDSP:is_on", False)
+                        self._redis.set("is_on", False)
                         # turn off player if we're not connected
                         if (self._redis.check_alive('PLAYER')
                             and self._redis.get_s("PLAYER:power")
@@ -212,7 +212,7 @@ class CDsp():
         if set_mute:
             self._cdsp_wp("set_mute", True)
             if self._redis:
-                self._redis.set_s("CDSP:mute", True)
+                self._redis.set("mute", True)
                 self._redis.send_action('PLAYER', "pause")
                 self._redis.publish_event("mute")
         else:
@@ -233,7 +233,7 @@ class CDsp():
                                     "defined at index %d",
                                     self._config_index)
 
-            self._redis.set_s("CDSP:mute", False)
+            self._redis.set("mute", False)
             self._redis.publish_event("mute")
 
     def db_vol_to_perc_vol(self, vol_db):
@@ -291,7 +291,7 @@ class CDsp():
         self._setting_volume = False
 
         if self._redis:
-            self._redis.set_s("CDSP:volume", int(vol))
+            self._redis.set("volume", int(vol))
             # set/sync player volume
             if player_vol_update and self._cfg.get('configs_control_player'):
                 vol_perc = round(self.db_vol_to_perc_vol(vol), 2)
@@ -340,7 +340,7 @@ class CDsp():
 
             # immediate user feedback as read/validates takes a bit of time
             self._switching_config = True
-            self._redis.set_s("CDSP:switching_config", True)
+            self._redis.set("switching_config", True)
             self._redis.publish_event("change config")
 
             if self._cfg.get('config_mute_on_change'):
