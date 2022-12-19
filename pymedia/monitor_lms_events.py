@@ -57,7 +57,8 @@ def parse_events(_socket, player_id, _redis):
                          LMS_PLAYERID)
             cdsp_set_volume(vol, _redis)
         else:
-            _redis.publish_event()
+            logger.debug("Action - PLAYER:update (received '%s')", line)
+            _redis.send_action('PLAYER', "update")
 
 
 # ---------------------
