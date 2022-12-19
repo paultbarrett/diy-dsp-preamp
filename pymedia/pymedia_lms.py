@@ -17,7 +17,7 @@ from pymedia_cdsp import redis_cdsp_ping
 # https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md
 
 class Lms():
-    def __init__(self, server, playerid, _redis, update_interval=4):
+    def __init__(self, server, playerid, _redis, update_interval=30):
         self._log = pymedia_logger.get_logger(__class__.__name__)
         self._server = server
         self._lmsquery = lmsquery.LMSQuery(server)
@@ -73,6 +73,7 @@ class Lms():
 
         else:
             func_action, func_action_args = {
+                    "update": [self.update_action, ()],
                     "previous_song": [self._lmsquery.previous_song, ()],
                     "next_song": [self._lmsquery.next_song, ()],
                     "play": [self._lmsquery.query, ("button", "play")],
@@ -102,6 +103,9 @@ class Lms():
 
         self.update()
 
+    def update_action(self, _):
+        """Run update() when called from action()."""
+        self.update()
 
     def update(self):
         """Update stats and update redis if they've changed."""
