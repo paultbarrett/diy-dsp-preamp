@@ -17,9 +17,9 @@ ExecStart=/usr/local/bin/camilladsp_systemd_wrapper "/%I"
 # SCHED_OTHER: PR = 20 + NI (NI is nice and ranges from -20 to 19)
 # SCHED_RR: PR = - 1 - real_time_priority
 # -> a SCHED_RR process has higher priority than any SCHED_OTHER
-#CPUSchedulingPolicy=rr
+CPUSchedulingPolicy=rr
 
-Nice=-15
+#Nice=-15
 
 # the following doesn't work
 # (https://github.com/systemd/systemd/issues/20320)
