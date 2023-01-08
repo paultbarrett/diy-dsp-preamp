@@ -20,19 +20,31 @@ logger = pymedia_logger.get_logger(__name__)
 LMS_SERVER = "juke"
 LMS_SERVER_PORT = 9090
 LMS_PLAYERID = "13:89:0e:c8:1d:a5"
-
 LMS_SUBSCRIBE = "mixer,playlist,play,pause,stop"
+
+VOL_EVENT_KEYS = (
+        'ROTARY_ENCODER:last_volume_event',
+        )
+VOL_EVENT_MAX_AGE = 2
 
 # ---------------------
 
 def cdsp_set_volume(vol, _redis):
     """Set CamillaDSP volume via redis action."""
+    logger.info("Action - set CDSP volume to %s", vol)
+
+    # don't update player volume if volume was changed by other means
+    # within the last VOL_EVENT_MAX_AGE seconds
+    for key in VOL_EVENT_KEYS:
+        if _redis.check_timestamp(key, max_age=VOL_EVENT_MAX_AGE):
+            logger.debug("Ignoring - %s < %ss", key, VOL_EVENT_MAX_AGE)
+            return
+
     # Pass 'NO_PLAYER_VOL_UPDATE' to avoid potential "feedback loops";
     # otherwise pymedia_cdsp would update LMS' volume when receiving a volume
     # change action - if volumes aren't identical (eg. because of different
     # implementations of volume change in LMS and pymedia_cdsp) then there would
     # be an infinite back-and-forth.
-    logger.info("Action - set CDSP volume to %s", vol)
     _redis.send_action('CDSP', f"volume_perc:{vol}:NO_PLAYER_VOL_UPDATE")
 
 def parse_events(_socket, player_id, _redis):
