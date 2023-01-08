@@ -103,15 +103,10 @@ class Display():
 
         Banner: player status | config index | signal RMS | signal peak
         """
-        player_is_stale = True
-        try:
-            if (time.time()
-                - float(self._redis.get_s("PLAYER:last_alive"))
-                < DISPLAY_MAX_PLAYER_STATS_AGE):
-                player_is_stale = False
-        except TypeError:
-            self._log.warning("PLAYER:last_alive isn't a float (not set yet ?)")
-
+        player_is_stale = not self._redis.check_timestamp(
+                "PLAYER:last_alive",
+                DISPLAY_MAX_PLAYER_STATS_AGE,
+                )
         max_playback_signal_rms = (
             self._redis.get_s("CDSP:max_playback_signal_rms"))
         max_playback_signal_peak = (
