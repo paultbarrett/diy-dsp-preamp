@@ -4,6 +4,7 @@
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
 
+from time import time
 import gpiod
 
 import pymedia_buffer_event
@@ -22,6 +23,7 @@ ROTARY_ENCODER_MAX_AGE = 0.15
 def cdsp_set_volume(_1, _2, incr, _redis):
     """Send (publish) volume up/down actions for CamillaDSP."""
     _redis.send_action('CDSP', f"volume_incr:{incr}")
+    _redis.set("last_volume_event", time())
 
 
 # ----------------
