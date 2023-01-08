@@ -119,7 +119,7 @@ class RedisHelper():
 
     def check_timestamp(self, key, max_age=2):
         """Check if the timestamp in key is more recent than max_age sec."""
-        tstamp = self.get_s(f"{key}")
+        tstamp = self.get_s(key)
 
         if tstamp is None:
             self._log.error("no '%s' key", key)
