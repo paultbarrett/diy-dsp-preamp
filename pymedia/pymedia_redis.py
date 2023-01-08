@@ -116,24 +116,29 @@ class RedisHelper():
                     f"wait_set=True and {self.pubsub_name}:last_alive isn't"
                     " set to {time_now} after {wait_set_tries} tries")
 
-    def check_alive(self, pubsub_name, max_age=20):
-        """Check if a 'last_alive' key was set less than max_age sec. ago."""
-        last_alive = self.get_s(f"{pubsub_name}:last_alive")
 
-        if last_alive is None:
-            self._log.error("no '%s:last_alive' key", pubsub_name)
+    def check_timestamp(self, pubsub_name, key, max_age=2):
+        """Check if the timestamp in key is more recent than max_age sec."""
+        tstamp = self.get_s(f"{pubsub_name}:{key}")
+
+        if tstamp is None:
+            self._log.error("no '%s:%s' key", pubsub_name, key)
             return False
 
         try:
-            if time.time() - float(last_alive) < max_age:
+            if time.time() - float(tstamp) < max_age:
                 return True
         except TypeError:
-            self._log.error("'%s:last_alive' isn't a float", pubsub_name)
+            self._log.error("'%s:%s' isn't a float", pubsub_name, key)
         else:
-            self._log.debug("%s hasn't updated redis in %s seconds",
-                          pubsub_name, max_age)
+            self._log.debug("%s:%s hasn't updated redis in %s seconds",
+                          pubsub_name, key, max_age)
 
         return False
+
+    def check_alive(self, pubsub_name, max_age=20):
+        """Check if a 'last_alive' key was set less than max_age sec. ago."""
+        return self.check_timestamp(pubsub_name, 'last_alive', max_age)
 
     def update_stats(self, stats, send_data_changed_event = False):
         """Update NAME:keys with dictionnary values
