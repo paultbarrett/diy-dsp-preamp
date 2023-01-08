@@ -31,13 +31,11 @@ VOL_EVENT_MAX_AGE = 2
 
 def cdsp_set_volume(vol, _redis):
     """Set CamillaDSP volume via redis action."""
-    logger.info("Action - set CDSP volume to %s", vol)
-
     # don't update player volume if volume was changed by other means
     # within the last VOL_EVENT_MAX_AGE seconds
     for key in VOL_EVENT_KEYS:
         if _redis.check_timestamp(key, max_age=VOL_EVENT_MAX_AGE):
-            logger.debug("Ignoring - %s < %ss", key, VOL_EVENT_MAX_AGE)
+            logger.debug("Ignoring vol change: %s < %ss", key, VOL_EVENT_MAX_AGE)
             return
 
     # Pass 'NO_PLAYER_VOL_UPDATE' to avoid potential "feedback loops";
@@ -45,6 +43,7 @@ def cdsp_set_volume(vol, _redis):
     # change action - if volumes aren't identical (eg. because of different
     # implementations of volume change in LMS and pymedia_cdsp) then there would
     # be an infinite back-and-forth.
+    logger.info("Action - set CDSP volume to %s", vol)
     _redis.send_action('CDSP', f"volume_perc:{vol}:NO_PLAYER_VOL_UPDATE")
 
 def parse_events(_socket, player_id, _redis):
