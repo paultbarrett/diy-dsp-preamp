@@ -250,7 +250,7 @@ class CDsp():
     def set_volume_incr(self, vol_incr, player_vol_update=True):
         """Increment volume."""
         self.set_volume_db(self._cdsp_wp("get_volume")
-                           + int(vol_incr * self._cfg['volume_step']),
+                           + round(vol_incr * self._cfg['volume_step']),
                            player_vol_update)
 
     def set_volume_percent_incr(self, vol_perc_incr, player_vol_update=True):
