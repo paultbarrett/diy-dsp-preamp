@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
     lms_cli_vol = LmsCliVol(LMS_SERVER, LMS_SERVER_PORT, LMS_PLAYERID,
                             cdsp_set_volume, (_redis,),
-                            player_update_action, (_redis)
+                            player_update_action, (_redis,)
                             )
 
     try:
