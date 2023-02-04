@@ -433,11 +433,11 @@ class CDsp():
                                       ex)
 
             if self._redis:
-                self._stats['volume'] = int(self._cdsp_wp("get_volume"))
+                self._stats['volume'] = round(self._cdsp_wp("get_volume"))
                 self._stats['max_playback_signal_rms'] = (
-                        int(max(self._cdsp_wp("get_playback_signal_rms"))))
+                        round(max(self._cdsp_wp("get_playback_signal_rms"))))
                 self._stats['max_playback_signal_peak'] = (
-                        int(max(self._cdsp_wp("get_playback_signal_peak"))))
+                        round(max(self._cdsp_wp("get_playback_signal_peak"))))
                 self._stats['is_on'] = is_on
                 self._stats['mute'] = self._cdsp_wp("get_mute")
                 self._stats['switching_config'] = self._switching_config
