@@ -257,7 +257,7 @@ class CDsp():
         """Increment volume as a percentage of the volume range."""
         vol_db_incr = vol_perc_incr / 100 * (self._cfg['volume_max'] -
                                                self._cfg['volume_min'])
-        self._log.debug("Converstion %s -> %s", vol_perc_incr, vol_db_incr)
+        self._log.debug("Conversion %s%% = %sdB", vol_perc_incr, vol_db_incr)
         self.set_volume_incr(vol_db_incr, player_vol_update)
 
     def set_volume_percent(self, vol_perc, player_vol_update=True):
