@@ -60,8 +60,8 @@ def player_update_action(_redis):
 
 class LmsCliVol():
     def __init__(self, server, port, playerid,
-                 f_vol, f_vol_args,
-                 f_default, f_default_args,
+                 cb_vol, cb_vol_args,
+                 cb_default, cb_default_args,
                  ping_interval=LMS_PING_INTERVAL,
                  socket_timeout=LMS_SOCKET_TIMEOUT):
 
@@ -69,11 +69,11 @@ class LmsCliVol():
         self.playerid = playerid
         self._redis = _redis
 
-        self.f_vol = f_vol
-        self.f_vol_args = f_vol_args
+        self.cb_vol = cb_vol
+        self.cb_vol_args = cb_vol_args
 
-        self.f_default = f_default
-        self.f_default_args = f_default_args
+        self.cb_default = cb_default
+        self.cb_default_args = cb_default_args
 
         self.th_ev_stop = threading.Event()
 
@@ -142,10 +142,10 @@ class LmsCliVol():
                 vol = re_vol_match.group(1)
                 self._log.info("Volume changed to %s for player %s", vol,
                         LMS_PLAYERID)
-                self.f_vol(self.f_vol_args, vol)
+                self.cb_vol(*self.cb_vol_args, vol)
             else:
                 self._log.info("Action - PLAYER:update (received '%s')", line)
-                self.f_default(self.f_default_args)
+                self.cb_default(*self.cb_default_args)
 
     def cleanup(self):
         self.th_ev_stop.set()
