@@ -101,7 +101,7 @@ class LmsCliVol():
     def ping(self, ping_interval):
         """Ping (query version) at regular intervals."""
         while not self.th_ev_stop.is_set():
-            self._log.info("ping")
+            self._log.debug("ping")
             self._sock.send("version ?\r".encode("UTF-8"))
             time.sleep(ping_interval)
 
